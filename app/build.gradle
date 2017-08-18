@@ -10,7 +10,10 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        resValue "string", "google_maps_key",
+                (project.findProperty("GOOGLE_MAPS_API_KEY") ?: "")
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -26,7 +29,11 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile 'com.google.android.gms:play-services-maps:11.0.2'
+
+
+//    compile 'com.google.android.gms:play-services-maps:11.0.4'
+//    compile 'com.google.android.gms:play-services-places:11.0.4'
+    compile 'com.google.android.gms:play-services:10.0.1'
     compile 'com.jakewharton:butterknife:8.7.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
 
