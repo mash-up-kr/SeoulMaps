@@ -10,10 +10,13 @@ import android.support.annotation.UiThread;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -32,11 +35,14 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import butterknife.BindView;
+import butterknife.OnClick;
 import kr.mash_up.seoulmaps.R;
 import kr.mash_up.seoulmaps.base.BaseActivity;
 import kr.mash_up.seoulmaps.listener.OnCategoryItemClickListener;
 import kr.mash_up.seoulmaps.present.MainContract;
 import kr.mash_up.seoulmaps.present.MainPresenter;
+
 
 /**
  * Created by wooyoungki on 2017. 7. 24..
@@ -52,6 +58,9 @@ public class MainActivity extends BaseActivity
     private CameraPosition mCameraPosition;
     private Location mLastKnownLocation;
     private GoogleApiClient mGoogleApiClient;
+    private SupportMapFragment mapFragment;
+    private long pressedTime = 0;
+    private boolean dialogIsVisible = false;
 
     private final LatLng mDefaultLocationSeoul = new LatLng(37.56, 126.97);  //서울
     private static final int DEFAULT_ZOOM = 15;
@@ -69,6 +78,10 @@ public class MainActivity extends BaseActivity
     private LatLng[] mLikelyPlaceLatLngs = new LatLng[mMaxEntries];
 
     MainContract.Presenter p;
+
+    @BindView(R.id.toolbar) Toolbar searchToolbar;
+    @BindView(R.id.search_layout) RelativeLayout searchLayout;
+    @BindView(R.id.container) FrameLayout container;
 
     @Override
     public void onCreate(Bundle savedBundle){
@@ -119,24 +132,66 @@ public class MainActivity extends BaseActivity
     }
 
     private void setGoogleMap() {
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
     }
 
     @UiThread
     private void setUpToolbar() {
+        searchToolbar.setNavigationIcon(R.drawable.search);
+    }
 
+    @OnClick({R.id.fab, R.id.toolbar})
+    public void onUserEventClicked(View view) {
+        switch (view.getId()) {
+            case R.id.fab:
+                showCurrentPlace();
+                break;
+            case R.id.toolbar:
+                showSearchLayout();
+                break;
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if(dialogIsVisible) {
+            container.setVisibility(View.GONE);
+            searchToolbar.setVisibility(View.VISIBLE);
+            searchLayout.setVisibility(View.GONE);
+            dialogIsVisible = false;
+        }
+        else if(pressedTime == 0) {
+            Toast.makeText(MainActivity.this, " 한 번 더 누르면 종료됩니다." , Toast.LENGTH_LONG).show();
+            pressedTime = System.currentTimeMillis();
+        }
+        else {
+            int seconds = (int) (System.currentTimeMillis() - pressedTime);
+
+            if ( seconds > 2000 ) {
+                Toast.makeText(MainActivity.this, " 한 번 더 누르면 종료됩니다." , Toast.LENGTH_LONG).show();
+                pressedTime = 0 ;
+            }
+            else {
+                super.onBackPressed();
+            }
+        }
+    }
+
+    private void showSearchLayout() {
+        dialogIsVisible = true;
+        container.setVisibility(View.VISIBLE);
+        container.bringToFront();   //우선순위 가장 위
+        searchToolbar.setVisibility(View.GONE);
+        searchLayout.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onMapReady(GoogleMap map) {
         mMap = map;
-
-
         // Use a custom info window adapter to handle multiple lines of text in the
         // info window contents.
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-
             @Override
             // Return null here, so that getInfoContents() is called next.
             public View getInfoWindow(Marker arg0) {
@@ -161,7 +216,6 @@ public class MainActivity extends BaseActivity
 
         // Turn on the My Location layer and the related control on the map.
         updateLocationUI();
-
         // Get the current location of the device and set the position of the map.
         getDeviceLocation();
     }
@@ -183,8 +237,7 @@ public class MainActivity extends BaseActivity
      * null in rare cases when a location is not available.
      */
         if (mLocationPermissionGranted) {
-            mLastKnownLocation = LocationServices.FusedLocationApi
-                    .getLastLocation(mGoogleApiClient);
+            mLastKnownLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         }
 
         // Set the map's camera position to the current location of the device.
@@ -222,7 +275,6 @@ public class MainActivity extends BaseActivity
         if (mMap == null) {
             return;
         }
-
     /*
      * Request location permission, so that we can get the location of the
      * device. The result of the permission request is handled by a callback,
@@ -257,8 +309,7 @@ public class MainActivity extends BaseActivity
             // Get the likely places - that is, the businesses and other points of interest that
             // are the best match for the device's current location.
             @SuppressWarnings("MissingPermission")
-            PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi
-                    .getCurrentPlace(mGoogleApiClient, null);
+            PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi.getCurrentPlace(mGoogleApiClient, null);
             result.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
                 @Override
                 public void onResult(@NonNull PlaceLikelihoodBuffer likelyPlaces) {
@@ -336,8 +387,7 @@ public class MainActivity extends BaseActivity
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
     }
 
