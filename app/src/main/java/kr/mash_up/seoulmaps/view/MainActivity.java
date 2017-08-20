@@ -34,6 +34,8 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.sa90.materialarcmenu.ArcMenu;
+import com.sa90.materialarcmenu.StateChangeListener;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -82,6 +84,7 @@ public class MainActivity extends BaseActivity
     @BindView(R.id.toolbar) Toolbar searchToolbar;
     @BindView(R.id.search_layout) RelativeLayout searchLayout;
     @BindView(R.id.container) FrameLayout container;
+    @BindView(R.id.arcMenu) ArcMenu arcMenu;
 
     @Override
     public void onCreate(Bundle savedBundle){
@@ -114,6 +117,22 @@ public class MainActivity extends BaseActivity
         setGoogleMap();
         setUpToolbar();
         setCategoryDialog();
+        setArcMenu();
+    }
+
+    private void setArcMenu() {
+        arcMenu.setRadius(getResources().getDimension(R.dimen.radius));
+        arcMenu.setStateChangeListener(new StateChangeListener() {
+            @Override
+            public void onMenuOpened() {
+
+            }
+
+            @Override
+            public void onMenuClosed() {
+
+            }
+        });
     }
 
     private void setCategoryDialog() {
@@ -141,12 +160,12 @@ public class MainActivity extends BaseActivity
         searchToolbar.setNavigationIcon(R.drawable.search);
     }
 
-    @OnClick({R.id.fab, R.id.toolbar})
+    @OnClick({R.id.toolbar})
     public void onUserEventClicked(View view) {
         switch (view.getId()) {
-            case R.id.fab:
-                showCurrentPlace();
-                break;
+//            case R.id.fab:
+//                showCurrentPlace();
+//                break;
             case R.id.toolbar:
                 showSearchLayout();
                 break;
@@ -161,6 +180,8 @@ public class MainActivity extends BaseActivity
             searchLayout.setVisibility(View.GONE);
             dialogIsVisible = false;
         }
+        else if(arcMenu.isMenuOpened())
+            arcMenu.toggleMenu();
         else if(pressedTime == 0) {
             Toast.makeText(MainActivity.this, " 한 번 더 누르면 종료됩니다." , Toast.LENGTH_LONG).show();
             pressedTime = System.currentTimeMillis();

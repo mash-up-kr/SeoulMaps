@@ -78,12 +78,32 @@
         android:layout_height="match_parent"
         tools:context=".view.MainActivity" />
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab"
+    <com.sa90.materialarcmenu.ArcMenu
+        android:id="@+id/arcMenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        app:srcCompat="@drawable/floating_add" />
+        app:menu_open="arc_left"
+        app:fabSize="normal"
+        app:menu_scr="@android:drawable/ic_dialog_dialer">
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/smoke"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/smoke" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/toilet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/toilet" />
+    </com.sa90.materialarcmenu.ArcMenu>
+    <!--<android.support.design.widget.FloatingActionButton-->
+        <!--android:id="@+id/fab"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_gravity="bottom|end"-->
+        <!--android:layout_margin="@dimen/fab_margin"-->
+        <!--app:srcCompat="@drawable/floating_add" />-->
 </android.support.design.widget.CoordinatorLayout>
 
