@@ -10,9 +10,14 @@ import android.support.annotation.UiThread;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.AutoCompleteTextView;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -32,6 +37,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.sa90.materialarcmenu.ArcMenu;
@@ -40,10 +46,13 @@ import com.sa90.materialarcmenu.StateChangeListener;
 import butterknife.BindView;
 import butterknife.OnClick;
 import kr.mash_up.seoulmaps.R;
+import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter;
 import kr.mash_up.seoulmaps.base.BaseActivity;
 import kr.mash_up.seoulmaps.listener.OnCategoryItemClickListener;
 import kr.mash_up.seoulmaps.present.MainContract;
 import kr.mash_up.seoulmaps.present.MainPresenter;
+
+import static kr.mash_up.seoulmaps.R.drawable.search;
 
 
 /**
@@ -79,12 +88,21 @@ public class MainActivity extends BaseActivity
     private String[] mLikelyPlaceAttributions = new String[mMaxEntries];
     private LatLng[] mLikelyPlaceLatLngs = new LatLng[mMaxEntries];
 
+    // Used for location search
+    private PlaceAutocompleteAdapter mAdapter;
+    private static final LatLngBounds BOUNDS_GREATER_SYDNEY = new LatLngBounds(
+            new LatLng(-34.041458, 150.790100), new LatLng(-33.682247, 151.383362));
+
     MainContract.Presenter p;
 
     @BindView(R.id.toolbar) Toolbar searchToolbar;
-    @BindView(R.id.search_layout) RelativeLayout searchLayout;
+    @BindView(R.id.search_layout) RelativeLayout searchToolbarEdit;
     @BindView(R.id.container) FrameLayout container;
     @BindView(R.id.arcMenu) ArcMenu arcMenu;
+    @BindView(R.id.autocomplete_places) AutoCompleteTextView placeAutocompleteTextView;
+    @BindView(R.id.search_recycler_view) RecyclerView searchRecyclerView;
+//    @BindView(R.id.place_details) TextView mPlaceDetailsText;
+//    @BindView(R.id.place_attribution) TextView mPlaceDetailsAttribution;
 
     @Override
     public void onCreate(Bundle savedBundle){
@@ -108,6 +126,13 @@ public class MainActivity extends BaseActivity
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        mAdapter = new PlaceAutocompleteAdapter(this, mGoogleApiClient, BOUNDS_GREATER_SYDNEY, null);
+        searchRecyclerView.setAdapter(mAdapter);
+    }
+
+    @Override
     public int getLayoutId() {
         return R.layout.activity_main;
     }
@@ -118,6 +143,35 @@ public class MainActivity extends BaseActivity
         setUpToolbar();
         setCategoryDialog();
         setArcMenu();
+        setSearchLocationView();
+    }
+
+    private void setSearchLocationView() {
+        searchRecyclerView.setHasFixedSize(true);
+        searchRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+//        placeAutocompleteTextView.setOnItemClickListener(mAutocompleteClickListener);
+        placeAutocompleteTextView.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if(!s.toString().equals("") && mGoogleApiClient.isConnected()) {
+                    mAdapter.getFilter().filter(s.toString());
+                    searchRecyclerView.setAdapter(mAdapter);
+                }
+                else
+                    Log.e(TAG, "not connected");
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
     }
 
     private void setArcMenu() {
@@ -157,55 +211,97 @@ public class MainActivity extends BaseActivity
 
     @UiThread
     private void setUpToolbar() {
-        searchToolbar.setNavigationIcon(R.drawable.search);
+        searchToolbar.setNavigationIcon(search);
     }
 
-    @OnClick({R.id.toolbar})
-    public void onUserEventClicked(View view) {
-        switch (view.getId()) {
-//            case R.id.fab:
-//                showCurrentPlace();
-//                break;
-            case R.id.toolbar:
-                showSearchLayout();
-                break;
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        if(dialogIsVisible) {
-            container.setVisibility(View.GONE);
-            searchToolbar.setVisibility(View.VISIBLE);
-            searchLayout.setVisibility(View.GONE);
-            dialogIsVisible = false;
-        }
-        else if(arcMenu.isMenuOpened())
-            arcMenu.toggleMenu();
-        else if(pressedTime == 0) {
-            Toast.makeText(MainActivity.this, " 한 번 더 누르면 종료됩니다." , Toast.LENGTH_LONG).show();
-            pressedTime = System.currentTimeMillis();
-        }
-        else {
-            int seconds = (int) (System.currentTimeMillis() - pressedTime);
-
-            if ( seconds > 2000 ) {
-                Toast.makeText(MainActivity.this, " 한 번 더 누르면 종료됩니다." , Toast.LENGTH_LONG).show();
-                pressedTime = 0 ;
-            }
-            else {
-                super.onBackPressed();
-            }
-        }
+    @OnClick(R.id.toolbar)
+    public void onToolbarClicked() {
+        showSearchLayout();
     }
 
     private void showSearchLayout() {
         dialogIsVisible = true;
         container.setVisibility(View.VISIBLE);
         container.bringToFront();   //우선순위 가장 위
+        searchRecyclerView.bringToFront();
         searchToolbar.setVisibility(View.GONE);
-        searchLayout.setVisibility(View.VISIBLE);
+        searchToolbarEdit.setVisibility(View.VISIBLE);
     }
+
+//    /**
+//     * Listener that handles selections from suggestions from the AutoCompleteTextView that
+//     * displays Place suggestions.
+//     * Gets the place id of the selected item and issues a request to the Places Geo Data API
+//     * to retrieve more details about the place.
+//     */
+//    private AdapterView.OnItemClickListener mAutocompleteClickListener = new AdapterView.OnItemClickListener() {
+//        @Override
+//        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//            /*
+//             Retrieve the place ID of the selected item from the Adapter.
+//             The adapter stores each Place suggestion in a AutocompletePrediction from which we
+//             read the place ID and title.
+//              */
+//            final AutocompletePrediction item = mAdapter.getItem(position);
+//            final String placeId = item.getPlaceId();
+//            final CharSequence primaryText = item.getPrimaryText(null);
+//
+//            Log.i(TAG, "Autocomplete item selected: " + primaryText);
+//
+//            /*
+//             Issue a request to the Places Geo Data API to retrieve a Place object with additional
+//             details about the place.
+//              */
+//            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId);
+////            placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
+//
+//            Toast.makeText(getApplicationContext(), "Clicked: " + primaryText, Toast.LENGTH_SHORT).show();
+//            Log.i(TAG, "Called getPlaceById to get Place details for " + placeId);
+//        }
+//    };
+//    /**
+//     * Callback for results from a Places Geo Data API query that shows the first place result in
+//     * the details view on screen.
+//     */
+//    private ResultCallback<PlaceBuffer> mUpdatePlaceDetailsCallback = new ResultCallback<PlaceBuffer>() {
+//        @Override
+//        public void onResult(PlaceBuffer places) {
+//            if (!places.getStatus().isSuccess()) {
+//                // Request did not complete successfully
+//                Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
+//                places.release();
+//                return;
+//            }
+//            // Get the Place object from the buffer.
+//            final Place place = places.get(0);
+//
+//            // Format details of the place for display and show it in a TextView.
+//            mPlaceDetailsText.setText(formatPlaceDetails(getResources(), place.getName(),
+//                    place.getId(), place.getAddress(), place.getPhoneNumber(),
+//                    place.getWebsiteUri()));
+//
+//            // Display the third party attributions if set.
+//            final CharSequence thirdPartyAttribution = places.getAttributions();
+//            if (thirdPartyAttribution == null) {
+//                mPlaceDetailsAttribution.setVisibility(View.GONE);
+//            } else {
+//                mPlaceDetailsAttribution.setVisibility(View.VISIBLE);
+//                mPlaceDetailsAttribution.setText(Html.fromHtml(thirdPartyAttribution.toString()));
+//            }
+//
+//            Log.i(TAG, "Place details received: " + place.getName());
+//
+//            places.release();
+//        }
+//    };
+//    private static Spanned formatPlaceDetails(Resources res, CharSequence name, String id,
+//                                              CharSequence address, CharSequence phoneNumber, Uri websiteUri) {
+//        Log.e(TAG, res.getString(R.string.place_details, name, id, address, phoneNumber,
+//                websiteUri));
+//        return Html.fromHtml(res.getString(R.string.place_details, name, id, address, phoneNumber,
+//                websiteUri));
+//    }
+
 
     @Override
     public void onMapReady(GoogleMap map) {
@@ -222,8 +318,7 @@ public class MainActivity extends BaseActivity
             @Override
             public View getInfoContents(Marker marker) {
                 // Inflate the layouts for the info window, title and snippet.
-                View infoWindow = getLayoutInflater().inflate(R.layout.custom_info_contents,
-                        (FrameLayout)findViewById(R.id.map), false);
+                View infoWindow = getLayoutInflater().inflate(R.layout.custom_info_contents, (FrameLayout)findViewById(R.id.map), false);
 
                 TextView title = ((TextView) infoWindow.findViewById(R.id.title));
                 title.setText(marker.getTitle());
@@ -414,6 +509,32 @@ public class MainActivity extends BaseActivity
 
     @Override
     public void onConnectionSuspended(int i) {
+    }
 
+    @Override
+    public void onBackPressed() {
+        if(dialogIsVisible) {
+            container.setVisibility(View.GONE);
+            searchToolbar.setVisibility(View.VISIBLE);
+            searchToolbarEdit.setVisibility(View.GONE);
+            dialogIsVisible = false;
+        }
+        else if(arcMenu.isMenuOpened())
+            arcMenu.toggleMenu();
+        else if(pressedTime == 0) {
+            Toast.makeText(MainActivity.this, " 한 번 더 누르면 종료됩니다." , Toast.LENGTH_LONG).show();
+            pressedTime = System.currentTimeMillis();
+        }
+        else {
+            int seconds = (int) (System.currentTimeMillis() - pressedTime);
+
+            if ( seconds > 2000 ) {
+                Toast.makeText(MainActivity.this, " 한 번 더 누르면 종료됩니다." , Toast.LENGTH_LONG).show();
+                pressedTime = 0 ;
+            }
+            else {
+                super.onBackPressed();
+            }
+        }
     }
 }
