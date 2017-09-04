@@ -1,10 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="kr.mash_up.seoulmaps.view.SplashActivity">
+    tools:context="kr.mash_up.seoulmaps.view.MainActivity">
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="350dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center|top"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:theme="@style/AppTheme.AppBarOverlay">
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:popupTheme="@style/AppTheme.PopupOverlay">
+            <TextView
+                android:text="search"
+                android:textColor="#000000"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"/>
+        </android.support.v7.widget.Toolbar>
+        <RelativeLayout
+            android:id="@+id/search_layout"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:paddingRight="10dp"
+            android:visibility="gone">
+            <ImageView
+                android:id="@+id/nav_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerInParent="true"
+                android:src="@drawable/nav_back"/>
+            <AutoCompleteTextView
+                android:id="@+id/autocomplete_places"
+                android:layout_width="220dp"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/nav_back"
+                android:layout_centerInParent="true"
+                android:textColor="#000000"
+                android:maxLines="1"
+                android:inputType="textAutoComplete"/>
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toLeftOf="@+id/search_location"
+                android:layout_centerInParent="true"
+                android:paddingRight="8dp"
+                android:src="@drawable/my_location"/>
+            <ImageView
+                android:id="@+id/search_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_alignParentRight="true"
+                android:src="@drawable/search_location"/>
+        </RelativeLayout>
+    </android.support.design.widget.AppBarLayout>
+
+    <FrameLayout
+        android:id="@+id/container"
+        android:visibility="gone"
+        android:background="#80000000"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/search_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#80E0E0E0"
+            android:layout_marginTop="90dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"/>
+    </FrameLayout>
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
@@ -12,6 +87,27 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context="com.example.mapwithmarker.MapsMarkerActivity" />
+        tools:context=".view.MainActivity" />
 
-</RelativeLayout>
+    <com.sa90.materialarcmenu.ArcMenu
+        android:id="@+id/arcMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        app:menu_open="arc_left"
+        app:fabSize="normal"
+        app:menu_scr="@android:drawable/ic_dialog_dialer">
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/smoke"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/smoke" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/toilet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/toilet" />
+    </com.sa90.materialarcmenu.ArcMenu>
+</android.support.design.widget.CoordinatorLayout>
+
