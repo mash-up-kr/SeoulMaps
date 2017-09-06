@@ -76,9 +76,9 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
         super.onCreate(savedBundle)
         p = MainPresenter(this)
 
-        if (savedBundle != null) {
-            mLastKnownLocation = savedBundle.getParcelable<Location>(KEY_LOCATION)
-            mCameraPosition = savedBundle.getParcelable<CameraPosition>(KEY_CAMERA_POSITION)
+        savedBundle?.let {
+            mLastKnownLocation = it.getParcelable<Location>(KEY_LOCATION)
+            mCameraPosition = it.getParcelable<CameraPosition>(KEY_CAMERA_POSITION)
         }
     }
 
@@ -88,9 +88,7 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
         search_recycler_view.adapter = mAdapter
     }
 
-    override fun getLayoutId(): Int {
-        return R.layout.activity_main
-    }
+    override fun getLayoutId() = R.layout.activity_main
 
     override fun initView() {
         setGoogleMap()
@@ -198,7 +196,7 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
     //             details about the place.
     //              */
     //            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId);
-    ////            placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
+    //            placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
     //
     //            Toast.makeText(getApplicationContext(), "Clicked: " + primaryText, Toast.LENGTH_SHORT).show();
     //            Log.i(TAG, "Called getPlaceById to get Place details for " + placeId);
@@ -434,9 +432,9 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
      * Saves the state of the map when the activity is paused.
      */
     override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
         outState.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
         outState.putParcelable(KEY_LOCATION, mLastKnownLocation)
-        super.onSaveInstanceState(outState)
     }
 
     override fun onBackPressed() {
@@ -463,7 +461,6 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
     }
 
     companion object {
-
         private val TAG = MainActivity::class.java.simpleName
         private val DEFAULT_ZOOM = 15
         private val KEY_CAMERA_POSITION = "camera_position"
@@ -473,6 +470,4 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
         private val BOUNDS_GREATER_SYDNEY = LatLngBounds(
                 LatLng(-34.041458, 150.790100), LatLng(-33.682247, 151.383362))
     }
-
-
 }
