@@ -80,6 +80,8 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
             mLastKnownLocation = it.getParcelable<Location>(KEY_LOCATION)
             mCameraPosition = it.getParcelable<CameraPosition>(KEY_CAMERA_POSITION)
         }
+
+        checkPermission()
     }
 
     public override fun onStart() {
@@ -276,7 +278,7 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
         getDeviceLocation()
     }
 
-    private fun getDeviceLocation() {
+    private fun checkPermission() {
         if (ContextCompat.checkSelfPermission(this.applicationContext,
                 android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true
@@ -285,6 +287,10 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
                     arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
+    }
+
+    private fun getDeviceLocation() {
+        checkPermission()
         /*
      * Before getting the device location, you must check location
      * permission, as described earlier in the tutorial. Then:
