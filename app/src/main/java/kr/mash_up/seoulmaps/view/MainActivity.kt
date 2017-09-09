@@ -1,10 +1,15 @@
 package kr.mash_up.seoulmaps.view
 
+import android.Manifest
+import android.app.Activity
 import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.support.annotation.UiThread
+import android.support.design.widget.Snackbar
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
@@ -17,7 +22,10 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.GoogleApiClient
+import com.google.android.gms.location.LocationListener
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.places.Places
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -33,12 +41,14 @@ import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter
 import kr.mash_up.seoulmaps.base.BaseActivity
 import kr.mash_up.seoulmaps.present.MainContract
 import kr.mash_up.seoulmaps.present.MainPresenter
+import kr.mash_up.seoulmaps.util.SharedPreferencesUtil
 
 /**
  * Created by wooyoungki on 2017. 7. 24..
  */
 
-class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
+class MainActivity : BaseActivity(), MainContract.View,
+        OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
     private lateinit var mMap: GoogleMap
     private lateinit var mapFragment: SupportMapFragment
     private var mCameraPosition: CameraPosition? = null
@@ -72,20 +82,28 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
     }
     protected lateinit var p: MainContract.Presenter
 
-    public override fun onCreate(savedBundle: Bundle?) {
-        super.onCreate(savedBundle)
+    public override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         p = MainPresenter(this)
 
-        savedBundle?.let {
+        savedInstanceState?.let {
             mLastKnownLocation = it.getParcelable<Location>(KEY_LOCATION)
             mCameraPosition = it.getParcelable<CameraPosition>(KEY_CAMERA_POSITION)
+            isErrorProcessing = it.getBoolean(FIELD_ERROR_PROCESSING)
         }
     }
 
+    @Override
     public override fun onStart() {
         super.onStart()
         mGoogleApiClient.connect()
         search_recycler_view.adapter = mAdapter
+    }
+
+    @Override
+    public override fun onStop() {
+        super.onStop()
+        mGoogleApiClient.disconnect()
     }
 
     override fun getLayoutId() = R.layout.activity_main
@@ -114,7 +132,6 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
                     } else
                         Log.e(TAG, "inot connected")
                 }
-
             })
 
     private fun setSearchRecyclerView() =
@@ -309,18 +326,31 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int,
-                                            permissions: Array<String>,
-                                            grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         mLocationPermissionGranted = false
         when (requestCode) {
             PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
                 // If request is cancelled, the result arrays are empty.
-                if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     mLocationPermissionGranted = true
                 }
             }
         }
+
+        //Fused Location Provider
+        if (requestCode != RC_PERMISSION) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            return
+        }
+        if (grantResults.isNotEmpty()) {
+            for (code in grantResults) {
+                if (code == PackageManager.PERMISSION_GRANTED) {
+                    getLocation()
+                    return
+                }
+            }
+        }
+
         updateLocationUI()
     }
 
@@ -417,16 +447,83 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
                 .show()
     }
 
+    private var isErrorProcessing = false
     override fun onConnectionFailed(connectionResult: ConnectionResult) {
+        if (isErrorProcessing) return
+        isErrorProcessing = true
+        if (connectionResult.hasResolution()) {
+            try {
+                connectionResult.startResolutionForResult(this, RC_API_CLIENT)
+            } catch (e: IntentSender.SendIntentException) {
+                e.printStackTrace()
+                mGoogleApiClient.connect()
+            }
 
+        } else {
+            val dialog = GoogleApiAvailability.getInstance().getErrorDialog(this, connectionResult.errorCode, RC_API_CLIENT)
+            dialog.setCancelable(false)
+            dialog.show()
+        }
     }
 
     override fun onConnected(bundle: Bundle?) {
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+        getLocation()   // 현재 내 GPS정보 가져옴
     }
 
-    override fun onConnectionSuspended(i: Int) {}
+    private fun getLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION) && !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), RC_PERMISSION)
+            }
+            Snackbar.make(window.decorView.rootView, "Location Permission", Snackbar.LENGTH_INDEFINITE)
+                    .setAction("OK") { ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), RC_PERMISSION) }.show()
+            return
+        }
+
+        LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
+                .let { displayLocation(it) }
+
+        //업데이트 요청을 설정
+        val request = LocationRequest()
+        //최소업데이트 시간(5초)
+        request.fastestInterval = 5000
+        //실제 업데이트 시간
+        request.interval = 7000
+        //최소 업데이트 거리(meter)
+        request.smallestDisplacement = 3f
+        request.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+
+        //리스너 등록
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, mListener)
+    }
+
+    var mListener: LocationListener = LocationListener { it -> displayLocation(it) }
+
+    private fun displayLocation(location: Location) {
+        SharedPreferencesUtil.getInstances()?.userLat = location.latitude.toFloat()
+        SharedPreferencesUtil.getInstances()?.userLong = location.longitude.toFloat()
+
+        val userLatitue = SharedPreferencesUtil.getInstances()?.userLat
+        Log.d(TAG, userLatitue.toString())
+    }
+    override fun onConnectionSuspended(i: Int) {
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, mListener)
+    }
+
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+        if (requestCode != RC_API_CLIENT) {
+            super.onActivityResult(requestCode, resultCode, data)
+            return
+        }
+        isErrorProcessing = false
+        if (resultCode == Activity.RESULT_OK) {
+            mGoogleApiClient.connect()
+        }
+    }
 
     /**
      * Saves the state of the map when the activity is paused.
@@ -435,6 +532,7 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
         super.onSaveInstanceState(outState)
         outState.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
         outState.putParcelable(KEY_LOCATION, mLastKnownLocation)
+        outState.putBoolean(FIELD_ERROR_PROCESSING, isErrorProcessing)
     }
 
     override fun onBackPressed() {
@@ -465,6 +563,10 @@ class MainActivity : BaseActivity(), MainContract.View, OnMapReadyCallback, Goog
         private val DEFAULT_ZOOM = 15
         private val KEY_CAMERA_POSITION = "camera_position"
         private val KEY_LOCATION = "location"
+
+        private val RC_PERMISSION = 1
+        private val RC_API_CLIENT = 2
+        private val FIELD_ERROR_PROCESSING = "errorProcessing"
 
         private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
         private val BOUNDS_GREATER_SYDNEY = LatLngBounds(

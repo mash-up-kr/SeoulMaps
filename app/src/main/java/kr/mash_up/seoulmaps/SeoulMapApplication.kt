@@ -7,7 +7,7 @@ import android.content.Context
  * Created by Tak on 2017. 8. 13..
  */
 
-class SeoulMapApplication : Application() {
+internal class SeoulMapApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
@@ -15,7 +15,7 @@ class SeoulMapApplication : Application() {
     }
 
     companion object {
-        var context: Context? = null
+        lateinit var context: Context
             private set
     }
 }
