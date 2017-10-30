@@ -37,8 +37,10 @@ import com.sa90.materialarcmenu.StateChangeListener
 import kotlinx.android.synthetic.main.activity_main.*
 import kr.mash_up.seoulmaps.R
 import kr.mash_up.seoulmaps.R.drawable.search
+import kr.mash_up.seoulmaps.SeoulMapApplication
 import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter
 import kr.mash_up.seoulmaps.base.BaseActivity
+import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 import kr.mash_up.seoulmaps.present.MainContract
 import kr.mash_up.seoulmaps.present.MainPresenter
 import kr.mash_up.seoulmaps.util.SharedPreferencesUtil
@@ -49,6 +51,7 @@ import kr.mash_up.seoulmaps.util.SharedPreferencesUtil
 
 class MainActivity : BaseActivity(), MainContract.View,
         OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
+
     private lateinit var mMap: GoogleMap
     private lateinit var mapFragment: SupportMapFragment
     private var mCameraPosition: CameraPosition? = null
@@ -80,11 +83,13 @@ class MainActivity : BaseActivity(), MainContract.View,
                 .addApi(Places.PLACE_DETECTION_API)
                 .build()
     }
-    protected lateinit var p: MainContract.Presenter
+    protected lateinit var presenter: MainContract.Presenter
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        p = MainPresenter(this)
+        presenter = MainPresenter()
+        presenter.view = this
+        presenter.toiletInfo = PublicInfoDataSource
 
         savedInstanceState?.let {
             mLastKnownLocation = it.getParcelable<Location>(KEY_LOCATION)
@@ -295,11 +300,11 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     private fun getDeviceLocation() {
         if (ContextCompat.checkSelfPermission(this.applicationContext,
-                android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true
         } else {
             ActivityCompat.requestPermissions(this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
         /*
@@ -361,11 +366,11 @@ class MainActivity : BaseActivity(), MainContract.View,
      * onRequestPermissionsResult.
      */
         if (ContextCompat.checkSelfPermission(this.applicationContext,
-                android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true
         } else {
             ActivityCompat.requestPermissions(this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
 
@@ -502,12 +507,37 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     var mListener: LocationListener = LocationListener { it -> displayLocation(it) }
 
+    var userLatitue: Float? = null
+    var userLong: Float? = null
     private fun displayLocation(location: Location) {
-        SharedPreferencesUtil.getInstances()?.userLat = location.latitude.toFloat()
-        SharedPreferencesUtil.getInstances()?.userLong = location.longitude.toFloat()
+        SharedPreferencesUtil.newInstance()?.userLat = location.latitude.toFloat()
+        SharedPreferencesUtil.newInstance()?.userLong = location.longitude.toFloat()
 
-        val userLatitue = SharedPreferencesUtil.getInstances()?.userLat
-        Log.d(TAG, userLatitue.toString())
+        userLatitue = SharedPreferencesUtil.newInstance()?.userLat
+        userLong = SharedPreferencesUtil.newInstance()?.userLong
+
+        Log.d(TAG, "lat: " + userLatitue.toString())
+
+        presenter.getPublicToiletInfo(userLatitue, userLong)
+//        createRetrofit(PublicAPIService::class.java, "http://52.78.80.125:3000").
+//                getToiletService(userLatitue, userLong).enqueue(object : Callback<PublicToiletInfo> {
+//            override fun onFailure(call: Call<PublicToiletInfo>?, t: Throwable?) {
+//
+//            }
+//
+//            override fun onResponse(call: Call<PublicToiletInfo>?, response: Response<PublicToiletInfo>?) {
+//                if(response?.isSuccessful ?: false) {
+//                    val publicToliletInfo = response?.body()
+//                    if(publicToliletInfo?.message.equals("Success")) {
+//                        Log.d(TAG, "success")
+//                    } else {
+//                        Toast.makeText(SeoulMapApplication.context, "데이터를 가져오지 못하였습니다.", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Toast.makeText(SeoulMapApplication.context, "데이터를 가져오지 못하였습니다.", Toast.LENGTH_SHORT).show()
+//                }
+//            }
+//        })
     }
     override fun onConnectionSuspended(i: Int) {
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, mListener)
@@ -528,11 +558,11 @@ class MainActivity : BaseActivity(), MainContract.View,
     /**
      * Saves the state of the map when the activity is paused.
      */
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
-        outState.putParcelable(KEY_LOCATION, mLastKnownLocation)
-        outState.putBoolean(FIELD_ERROR_PROCESSING, isErrorProcessing)
+    override fun onSaveInstanceState(savedInstanceState: Bundle?) {
+        super.onSaveInstanceState(savedInstanceState)
+        savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
+        savedInstanceState?.putParcelable(KEY_LOCATION, mLastKnownLocation)
+        savedInstanceState?.putBoolean(FIELD_ERROR_PROCESSING, isErrorProcessing)
     }
 
     override fun onBackPressed() {
@@ -557,6 +587,14 @@ class MainActivity : BaseActivity(), MainContract.View,
             }
         }
     }
+
+    override fun getToiletInfo() {
+
+    }
+    override fun showLoadFail() {
+        Toast.makeText(SeoulMapApplication.context, "데이터를 가져오지 못하였습니다.", Toast.LENGTH_SHORT).show()
+    }
+
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName

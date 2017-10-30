@@ -12,13 +12,8 @@ class SharedPreferencesUtil {
     val prefs: SharedPreferences? by lazy { PreferenceManager.getDefaultSharedPreferences(SeoulMapApplication.context) }
 
     companion object {
-        private var instance: SharedPreferencesUtil? = null
-
-        fun getInstances(): SharedPreferencesUtil? {
-            if(instance == null)
-                SharedPreferencesUtil
-
-            return instance
+        fun newInstance(): SharedPreferencesUtil? {
+            return SharedPreferencesUtil()
         }
     }
     //위도, 경도
