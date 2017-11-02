@@ -5,7 +5,6 @@ import android.graphics.Typeface
 import android.support.v7.widget.RecyclerView
 import android.text.style.StyleSpan
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Filter
 import android.widget.Filterable
@@ -16,7 +15,7 @@ import com.google.android.gms.location.places.AutocompleteFilter
 import com.google.android.gms.location.places.AutocompletePrediction
 import com.google.android.gms.location.places.Places
 import com.google.android.gms.maps.model.LatLngBounds
-import kr.mash_up.seoulmaps.R
+import kr.mash_up.seoulmaps.adapter.contract.PlaceAdapterContract
 import kr.mash_up.seoulmaps.adapter.holder.PlaceViewHolder
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -33,23 +32,28 @@ import java.util.concurrent.TimeUnit
  * The autocomplete filter used to restrict queries to a specific set of place types.
  * @see android.widget.ArrayAdapter.ArrayAdapter
  */
-class PlaceAutocompleteAdapter(private val mContext: Context, private val mGoogleApiClient: GoogleApiClient, private var mBounds: LatLngBounds?, private val mPlaceFilter: AutocompleteFilter?)
-    : RecyclerView.Adapter<PlaceViewHolder>(), Filterable {
+class PlaceAutocompleteAdapter(private val mContext: Context, private val mGoogleApiClient: GoogleApiClient, private var mBounds: LatLngBounds?, private val mPlaceFilter: AutocompleteFilter?):
+        RecyclerView.Adapter<PlaceViewHolder>(), Filterable,
+        PlaceAdapterContract.View {
 
     private var mResultList: ArrayList<AutocompletePrediction>? = null
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaceViewHolder
-        = PlaceViewHolder(LayoutInflater.from(mContext).inflate(R.layout.place_autocomplete_item, parent, false))
+    interface OnPlaceItemClickListener {
+        fun onItemClick(placeItem: AutocompletePrediction?)
+    }
+    override var onPlaceItemClickListener: OnPlaceItemClickListener? = null
 
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaceViewHolder
+            = PlaceViewHolder(mContext, parent, onPlaceItemClickListener)
 
     fun getItem(position: Int): AutocompletePrediction? = mResultList?.get(position)
 
+    override fun onBindViewHolder(holder: PlaceViewHolder?, position: Int) {
+        holder?.bindView(getItem(position), position)
 
-    override fun onBindViewHolder(holder: PlaceViewHolder, position: Int) {
-        val placeItem = getItem(position)
-
-        holder.placeTitle.text = placeItem?.getPrimaryText(STYLE_BOLD)
-        holder.placeDelete.setImageResource(R.drawable.item_delete)
+//        val placeItem = getItem(position)
+//        holder.placeTitle.text = placeItem?.getPrimaryText(STYLE_BOLD)
+//        holder.placeDelete.setImageResource(R.drawable.item_delete)
     }
 
     override fun getItemCount(): Int = if(mResultList != null) (mResultList as ArrayList<AutocompletePrediction>).size else 0
@@ -79,7 +83,6 @@ class PlaceAutocompleteAdapter(private val mContext: Context, private val mGoogl
 //                    filterData = getAutocomplete(constraint)
 //                }
                 results.values = filterData
-
                 results.count = filterData.size
 
 //                if (filterData != null) {

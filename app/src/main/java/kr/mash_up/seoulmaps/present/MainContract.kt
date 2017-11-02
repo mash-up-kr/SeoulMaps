@@ -1,5 +1,7 @@
 package kr.mash_up.seoulmaps.present
 
+import com.google.android.gms.location.places.AutocompletePrediction
+import kr.mash_up.seoulmaps.adapter.contract.PlaceAdapterContract
 import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 
 /**
@@ -9,12 +11,18 @@ import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 interface MainContract {
 
     interface View {
+        fun getPlaceInfo(placeItem: AutocompletePrediction?)
         fun getToiletInfo()
         fun showLoadFail()
     }
 
     interface Presenter {
         var view: View?
+
+        /**
+         * Adapter에 대한 View정의
+         */
+        var adapterView: PlaceAdapterContract.View?
 
         /**
          * Model

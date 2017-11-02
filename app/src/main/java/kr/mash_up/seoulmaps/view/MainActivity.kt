@@ -24,9 +24,13 @@ import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.GoogleApiClient
+import com.google.android.gms.common.api.ResultCallback
 import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.places.AutocompletePrediction
+import com.google.android.gms.location.places.Place
+import com.google.android.gms.location.places.PlaceBuffer
 import com.google.android.gms.location.places.Places
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -102,6 +106,7 @@ class MainActivity : BaseActivity(), MainContract.View,
     public override fun onStart() {
         super.onStart()
         mGoogleApiClient.connect()
+        presenter.adapterView = mAdapter
         search_recycler_view.adapter = mAdapter
     }
 
@@ -586,6 +591,25 @@ class MainActivity : BaseActivity(), MainContract.View,
                 super.onBackPressed()
             }
         }
+    }
+
+    override fun getPlaceInfo(placeItem: AutocompletePrediction?) {
+        val placeId = placeItem?.placeId
+
+        Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId)
+                .setResultCallback {
+                    object : ResultCallback<PlaceBuffer> {
+                        override fun onResult(places: PlaceBuffer) {
+                            if (places.getStatus().isSuccess() && places.getCount() > 0) {
+                                val myPlace: Place = places.get(0);
+                                Log.i(TAG, "Place found: " + myPlace.getName());
+                            } else {
+                                Log.e(TAG, "Place not found");
+                            }
+                            places.release();
+                        }
+                    }
+                }
     }
 
     override fun getToiletInfo() {
