@@ -2,6 +2,7 @@ package kr.mash_up.seoulmaps.present
 
 import com.google.android.gms.location.places.AutocompletePrediction
 import kr.mash_up.seoulmaps.adapter.contract.PlaceAdapterContract
+import kr.mash_up.seoulmaps.data.PublicToiletItem
 import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 
 /**
@@ -12,7 +13,8 @@ interface MainContract {
 
     interface View {
         fun getPlaceInfo(placeItem: AutocompletePrediction?)
-        fun getToiletInfo()
+        fun getToiletInfo(publicToiletItem: List<PublicToiletItem>?)
+        fun getSmokeInfo()
         fun showLoadFail()
     }
 
@@ -28,10 +30,12 @@ interface MainContract {
          * Model
          */
         var toiletInfo: PublicInfoDataSource?
+        var smokeInfo: PublicInfoDataSource?
 
         /**
-         * 공중 화장실 정보를 불러온다.
+         * 공중 서비스 정보를 불러온다.
          */
         fun getPublicToiletInfo(lat: Float?, lng: Float?)
+        fun getPublicSmokeInfo(lat: Float?, lng: Float?)
     }
 }

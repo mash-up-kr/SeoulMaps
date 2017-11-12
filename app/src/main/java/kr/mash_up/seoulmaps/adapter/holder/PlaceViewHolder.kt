@@ -28,16 +28,16 @@ class PlaceViewHolder(context: Context, parent: ViewGroup?, val onPlaceItemClick
             }
         }
 
-        itemView?.let {
-            with(it) {
-                place_item_title.text = item?.getPrimaryText(StyleSpan(Typeface.BOLD))
-                place_item_delete.setImageResource(R.drawable.item_delete)
+//        itemView?.let {
+//            with(it) {
+//                place_item_title.text = item?.getPrimaryText(StyleSpan(Typeface.BOLD))
+//                place_item_delete.setImageResource(R.drawable.item_delete)
 
 
 //        holder.placeTitle.text = placeItem?.getPrimaryText(STYLE_BOLD)
 //        holder.placeDelete.setImageResource(R.drawable.item_delete)
-            }
-        }
+//            }
+//        }
     }
 
 

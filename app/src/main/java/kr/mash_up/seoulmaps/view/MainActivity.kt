@@ -24,13 +24,10 @@ import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.GoogleApiClient
-import com.google.android.gms.common.api.ResultCallback
 import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.places.AutocompletePrediction
-import com.google.android.gms.location.places.Place
-import com.google.android.gms.location.places.PlaceBuffer
 import com.google.android.gms.location.places.Places
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -44,6 +41,7 @@ import kr.mash_up.seoulmaps.R.drawable.search
 import kr.mash_up.seoulmaps.SeoulMapApplication
 import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter
 import kr.mash_up.seoulmaps.base.BaseActivity
+import kr.mash_up.seoulmaps.data.PublicToiletItem
 import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 import kr.mash_up.seoulmaps.present.MainContract
 import kr.mash_up.seoulmaps.present.MainPresenter
@@ -87,6 +85,8 @@ class MainActivity : BaseActivity(), MainContract.View,
                 .addApi(Places.PLACE_DETECTION_API)
                 .build()
     }
+    protected lateinit var mGeoDataClient: GeoDataClient
+
     protected lateinit var presenter: MainContract.Presenter
 
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,6 +94,9 @@ class MainActivity : BaseActivity(), MainContract.View,
         presenter = MainPresenter()
         presenter.view = this
         presenter.toiletInfo = PublicInfoDataSource
+        presenter.smokeInfo = PublicInfoDataSource
+
+        mGeoDataClient = Places.getGeoDataClient(this, null)
 
         savedInstanceState?.let {
             mLastKnownLocation = it.getParcelable<Location>(KEY_LOCATION)
@@ -121,7 +124,6 @@ class MainActivity : BaseActivity(), MainContract.View,
     override fun initView() {
         setGoogleMap()
         setUpToolbar()
-        setCategoryDialog()
         setArcMenu()
         setSearchRecyclerView()
         setSearchPlaceTextView()
@@ -165,18 +167,6 @@ class MainActivity : BaseActivity(), MainContract.View,
                 })
             }
 
-    private fun setCategoryDialog() {
-        val fm = MainFragment.newInstance()
-        fm.setOnClickListener { category ->
-            if (category == "toilet") {
-                Log.d(TAG, "toilet")
-            } else {
-                Log.d(TAG, "smoke")
-            }
-        }
-        fm.show(supportFragmentManager, MainFragment.TAG)
-    }
-
     private fun setGoogleMap() {
         mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -197,81 +187,6 @@ class MainActivity : BaseActivity(), MainContract.View,
         toolbar?.visibility = View.GONE
         search_layout.visibility = View.VISIBLE
     }
-
-    //    /**
-    //     * Listener that handles selections from suggestions from the AutoCompleteTextView that
-    //     * displays Place suggestions.
-    //     * Gets the place id of the selected item and issues a request to the Places Geo Data API
-    //     * to retrieve more details about the place.
-    //     */
-    //    private AdapterView.OnItemClickListener mAutocompleteClickListener = new AdapterView.OnItemClickListener() {
-    //        @Override
-    //        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    //            /*
-    //             Retrieve the place ID of the selected item from the Adapter.
-    //             The adapter stores each Place suggestion in a AutocompletePrediction from which we
-    //             read the place ID and title.
-    //              */
-    //            final AutocompletePrediction item = mAdapter.getItem(position);
-    //            final String placeId = item.getPlaceId();
-    //            final CharSequence primaryText = item.getPrimaryText(null);
-    //
-    //            Log.i(TAG, "Autocomplete item selected: " + primaryText);
-    //
-    //            /*
-    //             Issue a request to the Places Geo Data API to retrieve a Place object with additional
-    //             details about the place.
-    //              */
-    //            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId);
-    //            placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
-    //
-    //            Toast.makeText(getApplicationContext(), "Clicked: " + primaryText, Toast.LENGTH_SHORT).show();
-    //            Log.i(TAG, "Called getPlaceById to get Place details for " + placeId);
-    //        }
-    //    };
-    //    /**
-    //     * Callback for results from a Places Geo Data API query that shows the first place result in
-    //     * the details view on screen.
-    //     */
-    //    private ResultCallback<PlaceBuffer> mUpdatePlaceDetailsCallback = new ResultCallback<PlaceBuffer>() {
-    //        @Override
-    //        public void onResult(PlaceBuffer places) {
-    //            if (!places.getStatus().isSuccess()) {
-    //                // Request did not complete successfully
-    //                Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
-    //                places.release();
-    //                return;
-    //            }
-    //            // Get the Place object from the buffer.
-    //            final Place place = places.get(0);
-    //
-    //            // Format details of the place for display and show it in a TextView.
-    //            mPlaceDetailsText.setText(formatPlaceDetails(getResources(), place.getName(),
-    //                    place.getId(), place.getAddress(), place.getPhoneNumber(),
-    //                    place.getWebsiteUri()));
-    //
-    //            // Display the third party attributions if set.
-    //            final CharSequence thirdPartyAttribution = places.getAttributions();
-    //            if (thirdPartyAttribution == null) {
-    //                mPlaceDetailsAttribution.setVisibility(View.GONE);
-    //            } else {
-    //                mPlaceDetailsAttribution.setVisibility(View.VISIBLE);
-    //                mPlaceDetailsAttribution.setText(Html.fromHtml(thirdPartyAttribution.toString()));
-    //            }
-    //
-    //            Log.i(TAG, "Place details received: " + place.getName());
-    //
-    //            places.release();
-    //        }
-    //    };
-    //    private static Spanned formatPlaceDetails(Resources res, CharSequence name, String id,
-    //                                              CharSequence address, CharSequence phoneNumber, Uri websiteUri) {
-    //        Log.e(TAG, res.getString(R.string.place_details, name, id, address, phoneNumber,
-    //                websiteUri));
-    //        return Html.fromHtml(res.getString(R.string.place_details, name, id, address, phoneNumber,
-    //                websiteUri));
-    //    }
-
 
     override fun onMapReady(map: GoogleMap) {
         mMap = map
@@ -494,7 +409,12 @@ class MainActivity : BaseActivity(), MainContract.View,
         }
 
         LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
-                .let { displayLocation(it) }
+                .let {
+                    SharedPreferencesUtil.newInstance()?.userLat = it.latitude.toFloat()
+                    SharedPreferencesUtil.newInstance()?.userLong = it.longitude.toFloat()
+                    displayLocation()
+                    showCategoryDialog()
+                }
 
         //업데이트 요청을 설정
         val request = LocationRequest()
@@ -510,44 +430,39 @@ class MainActivity : BaseActivity(), MainContract.View,
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, mListener)
     }
 
-    var mListener: LocationListener = LocationListener { it -> displayLocation(it) }
+    var mListener: LocationListener = LocationListener { it -> displayLocation() }
 
     var userLatitue: Float? = null
     var userLong: Float? = null
-    private fun displayLocation(location: Location) {
-        SharedPreferencesUtil.newInstance()?.userLat = location.latitude.toFloat()
-        SharedPreferencesUtil.newInstance()?.userLong = location.longitude.toFloat()
-
+    private fun displayLocation() {
         userLatitue = SharedPreferencesUtil.newInstance()?.userLat
         userLong = SharedPreferencesUtil.newInstance()?.userLong
 
         Log.d(TAG, "lat: " + userLatitue.toString())
 
         presenter.getPublicToiletInfo(userLatitue, userLong)
-//        createRetrofit(PublicAPIService::class.java, "http://52.78.80.125:3000").
-//                getToiletService(userLatitue, userLong).enqueue(object : Callback<PublicToiletInfo> {
-//            override fun onFailure(call: Call<PublicToiletInfo>?, t: Throwable?) {
-//
-//            }
-//
-//            override fun onResponse(call: Call<PublicToiletInfo>?, response: Response<PublicToiletInfo>?) {
-//                if(response?.isSuccessful ?: false) {
-//                    val publicToliletInfo = response?.body()
-//                    if(publicToliletInfo?.message.equals("Success")) {
-//                        Log.d(TAG, "success")
-//                    } else {
-//                        Toast.makeText(SeoulMapApplication.context, "데이터를 가져오지 못하였습니다.", Toast.LENGTH_SHORT).show()
-//                    }
-//                } else {
-//                    Toast.makeText(SeoulMapApplication.context, "데이터를 가져오지 못하였습니다.", Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//        })
     }
+
+    private fun showCategoryDialog() {
+        userLatitue = SharedPreferencesUtil.newInstance()?.userLat
+        userLong = SharedPreferencesUtil.newInstance()?.userLong
+
+        val fm = MainFragment.newInstance()
+        fm.setOnClickListener { category ->
+            if (category == "toilet") {
+                presenter.getPublicToiletInfo(userLatitue, userLong)
+                Log.d(TAG, "toilet")
+            } else {
+                presenter.getPublicSmokeInfo(userLatitue, userLong)
+                Log.d(TAG, "smoke")
+            }
+        }
+        fm.show(supportFragmentManager, MainFragment.TAG)
+    }
+
     override fun onConnectionSuspended(i: Int) {
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, mListener)
     }
-
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         if (requestCode != RC_API_CLIENT) {
@@ -595,24 +510,43 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     override fun getPlaceInfo(placeItem: AutocompletePrediction?) {
         val placeId = placeItem?.placeId
+        Log.d("placeId : ", placeId + "")
 
-        Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId)
-                .setResultCallback {
-                    object : ResultCallback<PlaceBuffer> {
-                        override fun onResult(places: PlaceBuffer) {
-                            if (places.getStatus().isSuccess() && places.getCount() > 0) {
-                                val myPlace: Place = places.get(0);
-                                Log.i(TAG, "Place found: " + myPlace.getName());
-                            } else {
-                                Log.e(TAG, "Place not found");
-                            }
-                            places.release();
-                        }
-                    }
-                }
+        val primaryText = placeItem?.getPrimaryText(null)
+
+        Log.i(TAG, "Autocomplete item selected: " + primaryText)
+
+        /*
+             Issue a request to the Places Geo Data Client to retrieve a Place object with
+             additional details about the place.
+              */
+//        val placeResult = mGoogleApiClient.getPlaceById(placeId)
+//        placeResult.addOnCompleteListener(mUpdatePlaceDetailsCallback)
+//
+//        Toast.makeText(applicationContext, "Clicked: " + primaryText,
+//                Toast.LENGTH_SHORT).show()
+//        Log.i(TAG, "Called getPlaceById to get Place details for " + placeId)
+
+//        Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId)
+//                .setResultCallback {
+//                    object : ResultCallback<PlaceBuffer> {
+//                        override fun onResult(places: PlaceBuffer) {
+//                            if (places.getStatus().isSuccess() && places.getCount() > 0) {
+//                                val myPlace: Place = places.get(0);
+//                                Log.d(TAG, "Place found: " + myPlace.name + "," + myPlace.latLng);
+//                            } else {
+//                                Log.d(TAG, "Place not found");
+//                            }
+//                            places.release();
+//                        }
+//                    }
+//                }
     }
 
-    override fun getToiletInfo() {
+    override fun getToiletInfo(publicToiletItem: List<PublicToiletItem>?) {
+
+    }
+    override fun getSmokeInfo() {
 
     }
     override fun showLoadFail() {

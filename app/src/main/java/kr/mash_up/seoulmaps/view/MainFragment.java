@@ -10,7 +10,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
 import kr.mash_up.seoulmaps.R;
-import kr.mash_up.seoulmaps.listener.OnCategoryItemClickListener;
+import kr.mash_up.seoulmaps.listener.OnItemClickListener;
 
 /**
  * Created by Tak on 2017. 8. 13..
@@ -79,8 +79,8 @@ public class MainFragment extends DialogFragment {
         unbinder.unbind();
     }
 
-    private OnCategoryItemClickListener onCategoryItemClickListener;
-    public void setOnClickListener(OnCategoryItemClickListener onCategoryItemClickListener) {
+    private OnItemClickListener onCategoryItemClickListener;
+    public void setOnClickListener(OnItemClickListener onCategoryItemClickListener) {
         this.onCategoryItemClickListener = onCategoryItemClickListener;
     }
 }

@@ -1,5 +1,6 @@
 package kr.mash_up.seoulmaps.network
 
+import kr.mash_up.seoulmaps.data.PublicSmokeInfo
 import kr.mash_up.seoulmaps.data.PublicToiletInfo
 import retrofit2.Call
 import retrofit2.http.GET
@@ -12,4 +13,8 @@ interface PublicServiceInterface {
     @GET("/location/get/toilet")
     fun getToiletService(
             @Query("lat") userLat: Float?, @Query("lng") userLong: Float?): Call<PublicToiletInfo>
+
+    @GET("/location/get/smoke")
+    fun getSmokeService(
+            @Query("lat") userLat: Float?, @Query("lng") userLong: Float?): Call<PublicSmokeInfo>
 }
