@@ -9,4 +9,4 @@ data class PublicToiletItem(val _id: String,
                             val toiletType: String,
                             val locationName: String,
                             val __v: String,
-                            val location: FloatArray)
+                            val location: List<Double>)

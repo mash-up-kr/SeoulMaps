@@ -2,17 +2,14 @@ package kr.mash_up.seoulmaps.view
 
 import android.Manifest
 import android.app.Activity
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.support.annotation.UiThread
-import android.support.design.widget.Snackbar
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
 import android.support.v7.widget.LinearLayoutManager
 import android.text.Editable
 import android.text.TextWatcher
@@ -24,10 +21,10 @@ import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.GoogleApiClient
-import com.google.android.gms.location.LocationListener
-import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.common.api.ResultCallback
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.places.AutocompletePrediction
+import com.google.android.gms.location.places.PlaceBuffer
 import com.google.android.gms.location.places.Places
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -45,7 +42,6 @@ import kr.mash_up.seoulmaps.data.PublicToiletItem
 import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 import kr.mash_up.seoulmaps.present.MainContract
 import kr.mash_up.seoulmaps.present.MainPresenter
-import kr.mash_up.seoulmaps.util.SharedPreferencesUtil
 
 /**
  * Created by wooyoungki on 2017. 7. 24..
@@ -64,12 +60,7 @@ class MainActivity : BaseActivity(), MainContract.View,
     private val mDefaultLocationSeoul = LatLng(37.56, 126.97)  //서울
     private var mLocationPermissionGranted: Boolean = false
 
-    // Used for selecting the current place.
-    private val mMaxEntries = 5
-    private var mLikelyPlaceNames = arrayOfNulls<String>(mMaxEntries)
-    private var mLikelyPlaceAddresses = arrayOfNulls<String>(mMaxEntries)
-    private var mLikelyPlaceAttributions = arrayOfNulls<String>(mMaxEntries)
-    private var mLikelyPlaceLatLngs = arrayOfNulls<LatLng>(mMaxEntries)
+    private var category: String = ""
 
     // Used for location search
     private val mAdapter: PlaceAutocompleteAdapter by lazy {
@@ -85,7 +76,6 @@ class MainActivity : BaseActivity(), MainContract.View,
                 .addApi(Places.PLACE_DETECTION_API)
                 .build()
     }
-    protected lateinit var mGeoDataClient: GeoDataClient
 
     protected lateinit var presenter: MainContract.Presenter
 
@@ -95,8 +85,6 @@ class MainActivity : BaseActivity(), MainContract.View,
         presenter.view = this
         presenter.toiletInfo = PublicInfoDataSource
         presenter.smokeInfo = PublicInfoDataSource
-
-        mGeoDataClient = Places.getGeoDataClient(this, null)
 
         savedInstanceState?.let {
             mLastKnownLocation = it.getParcelable<Location>(KEY_LOCATION)
@@ -127,6 +115,7 @@ class MainActivity : BaseActivity(), MainContract.View,
         setArcMenu()
         setSearchRecyclerView()
         setSearchPlaceTextView()
+        showCategoryDialog()
     }
 
     private fun setSearchPlaceTextView() =
@@ -262,20 +251,6 @@ class MainActivity : BaseActivity(), MainContract.View,
             }
         }
 
-        //Fused Location Provider
-        if (requestCode != RC_PERMISSION) {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-            return
-        }
-        if (grantResults.isNotEmpty()) {
-            for (code in grantResults) {
-                if (code == PackageManager.PERMISSION_GRANTED) {
-                    getLocation()
-                    return
-                }
-            }
-        }
-
         updateLocationUI()
     }
 
@@ -304,74 +279,6 @@ class MainActivity : BaseActivity(), MainContract.View,
         }
     }
 
-    private fun showCurrentPlace() {
-        if (mLocationPermissionGranted) {
-            // Get the likely places - that is, the businesses and other points of interest that
-            // are the best match for the device's current location.
-            val result = Places.PlaceDetectionApi.getCurrentPlace(mGoogleApiClient, null)
-            result.setResultCallback { likelyPlaces ->
-                var i = 0
-                mLikelyPlaceNames = arrayOfNulls<String>(mMaxEntries)
-                mLikelyPlaceAddresses = arrayOfNulls<String>(mMaxEntries)
-                mLikelyPlaceAttributions = arrayOfNulls<String>(mMaxEntries)
-                mLikelyPlaceLatLngs = arrayOfNulls<LatLng>(mMaxEntries)
-                for (placeLikelihood in likelyPlaces) {
-                    // Build a list of likely places to show the user. Max 5.
-                    mLikelyPlaceNames[i] = placeLikelihood.place.name as String
-                    mLikelyPlaceAddresses[i] = placeLikelihood.place.address as String
-                    mLikelyPlaceAttributions[i] = placeLikelihood.place
-                            .attributions as String
-                    mLikelyPlaceLatLngs[i] = placeLikelihood.place.latLng
-
-                    i++
-                    if (i > mMaxEntries - 1) {
-                        break
-                    }
-                }
-                // Release the place likelihood buffer, to avoid memory leaks.
-                likelyPlaces.release()
-
-                // Show a dialog offering the user the list of likely places, and add a
-                // marker at the selected place.
-                openPlacesDialog()
-            }
-        } else {
-            // Add a default marker, because the user hasn't selected a place.
-            mMap.addMarker(MarkerOptions()
-                    .title(getString(R.string.default_info_title))
-                    .position(mDefaultLocationSeoul)
-                    .snippet(getString(R.string.default_info_snippet)))
-        }
-    }
-
-    private fun openPlacesDialog() {
-        // Ask the user to choose the place where they are now.
-        val listener = DialogInterface.OnClickListener { dialog, which ->
-            // The "which" argument contains the position of the selected item.
-            val markerLatLng = mLikelyPlaceLatLngs[which]
-            var markerSnippet = mLikelyPlaceAddresses[which]
-            if (mLikelyPlaceAttributions[which] != null) {
-                markerSnippet = markerSnippet + "\n" + mLikelyPlaceAttributions[which]
-            }
-            // Add a marker for the selected place, with an info window
-            // showing information about that place.
-            mMap.addMarker(MarkerOptions()
-                    .title(mLikelyPlaceNames[which])
-                    .position(markerLatLng!!)
-                    .snippet(markerSnippet))
-
-            // Position the map's camera at the location of the marker.
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(markerLatLng,
-                    DEFAULT_ZOOM.toFloat()))
-        }
-
-        // Display the dialog.
-        val dialog = AlertDialog.Builder(this)
-                .setTitle(R.string.pick_place)
-                .setItems(mLikelyPlaceNames, listener)
-                .show()
-    }
-
     private var isErrorProcessing = false
     override fun onConnectionFailed(connectionResult: ConnectionResult) {
         if (isErrorProcessing) return
@@ -394,75 +301,24 @@ class MainActivity : BaseActivity(), MainContract.View,
     override fun onConnected(bundle: Bundle?) {
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-        getLocation()   // 현재 내 GPS정보 가져옴
-    }
-
-    private fun getLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION) && !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), RC_PERMISSION)
-            }
-            Snackbar.make(window.decorView.rootView, "Location Permission", Snackbar.LENGTH_INDEFINITE)
-                    .setAction("OK") { ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), RC_PERMISSION) }.show()
-            return
-        }
-
-        LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
-                .let {
-                    SharedPreferencesUtil.newInstance()?.userLat = it.latitude.toFloat()
-                    SharedPreferencesUtil.newInstance()?.userLong = it.longitude.toFloat()
-                    displayLocation()
-                    showCategoryDialog()
-                }
-
-        //업데이트 요청을 설정
-        val request = LocationRequest()
-        //최소업데이트 시간(5초)
-        request.fastestInterval = 5000
-        //실제 업데이트 시간
-        request.interval = 7000
-        //최소 업데이트 거리(meter)
-        request.smallestDisplacement = 3f
-        request.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-
-        //리스너 등록
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, mListener)
-    }
-
-    var mListener: LocationListener = LocationListener { it -> displayLocation() }
-
-    var userLatitue: Float? = null
-    var userLong: Float? = null
-    private fun displayLocation() {
-        userLatitue = SharedPreferencesUtil.newInstance()?.userLat
-        userLong = SharedPreferencesUtil.newInstance()?.userLong
-
-        Log.d(TAG, "lat: " + userLatitue.toString())
-
-        presenter.getPublicToiletInfo(userLatitue, userLong)
     }
 
     private fun showCategoryDialog() {
-        userLatitue = SharedPreferencesUtil.newInstance()?.userLat
-        userLong = SharedPreferencesUtil.newInstance()?.userLong
-
         val fm = MainFragment.newInstance()
-        fm.setOnClickListener { category ->
-            if (category == "toilet") {
-                presenter.getPublicToiletInfo(userLatitue, userLong)
-                Log.d(TAG, "toilet")
-            } else {
-                presenter.getPublicSmokeInfo(userLatitue, userLong)
-                Log.d(TAG, "smoke")
+        fm.setOnClickListener { item ->
+            category = item
+            mLastKnownLocation?.let {
+                val lat = it.latitude
+                val lng = it.longitude
+                Log.d("latlngaa", lat.toString() + "," + lng.toString())
+
+                callPublicService(lat, lng)
             }
         }
         fm.show(supportFragmentManager, MainFragment.TAG)
     }
 
-    override fun onConnectionSuspended(i: Int) {
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, mListener)
-    }
+    override fun onConnectionSuspended(i: Int) {}
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         if (requestCode != RC_API_CLIENT) {
@@ -475,9 +331,6 @@ class MainActivity : BaseActivity(), MainContract.View,
         }
     }
 
-    /**
-     * Saves the state of the map when the activity is paused.
-     */
     override fun onSaveInstanceState(savedInstanceState: Bundle?) {
         super.onSaveInstanceState(savedInstanceState)
         savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
@@ -487,6 +340,7 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     override fun onBackPressed() {
         if (dialogIsVisible) {
+            //전면에 나와있는 탐색 창을 닫는다.
             container?.visibility = View.GONE
             toolbar?.visibility = View.VISIBLE
             search_layout?.visibility = View.GONE
@@ -510,43 +364,58 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     override fun getPlaceInfo(placeItem: AutocompletePrediction?) {
         val placeId = placeItem?.placeId
-        Log.d("placeId : ", placeId + "")
-
         val primaryText = placeItem?.getPrimaryText(null)
 
-        Log.i(TAG, "Autocomplete item selected: " + primaryText)
+        Toast.makeText(applicationContext, "Clicked: " + primaryText, Toast.LENGTH_SHORT).show()
+        Log.i(TAG, "Called getPlaceById to get Place details for " + placeId)
 
-        /*
-             Issue a request to the Places Geo Data Client to retrieve a Place object with
-             additional details about the place.
-              */
-//        val placeResult = mGoogleApiClient.getPlaceById(placeId)
-//        placeResult.addOnCompleteListener(mUpdatePlaceDetailsCallback)
-//
-//        Toast.makeText(applicationContext, "Clicked: " + primaryText,
-//                Toast.LENGTH_SHORT).show()
-//        Log.i(TAG, "Called getPlaceById to get Place details for " + placeId)
+        //전면에 나와있는 탐색 창을 닫는다.
+        container?.visibility = View.GONE
+        toolbar?.visibility = View.VISIBLE
+        search_layout.visibility = View.GONE
+        dialogIsVisible = false
 
-//        Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId)
-//                .setResultCallback {
-//                    object : ResultCallback<PlaceBuffer> {
-//                        override fun onResult(places: PlaceBuffer) {
-//                            if (places.getStatus().isSuccess() && places.getCount() > 0) {
-//                                val myPlace: Place = places.get(0);
-//                                Log.d(TAG, "Place found: " + myPlace.name + "," + myPlace.latLng);
-//                            } else {
-//                                Log.d(TAG, "Place not found");
-//                            }
-//                            places.release();
-//                        }
-//                    }
-//                }
+        val placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId)
+        placeResult.setResultCallback(mUpdatePlaceDetailsCallback)
     }
 
-    override fun getToiletInfo(publicToiletItem: List<PublicToiletItem>?) {
+    private val mUpdatePlaceDetailsCallback = ResultCallback<PlaceBuffer> { places ->
+        if (!places.status.isSuccess) {
+            Log.e(TAG, "Place query did not complete. Error: " + places.status.toString())
+            places.release()
+            return@ResultCallback
+        }
+        // Get the Place object from the buffer.
+        val place = places.get(0)
+        val lat = place.latLng.latitude
+        val lng = place.latLng.longitude
+        callPublicService(lat, lng)
 
+        //줌 이동
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
+
+        places.release()
     }
-    override fun getSmokeInfo() {
+
+    private fun callPublicService(lat: Double, lng: Double) {
+        when(category) {
+            "toilet" -> presenter.getPublicToiletInfo(202652.047 ,444755.038)
+            "smoke" -> presenter.getPublicSmokeInfo(202652.047, 444755.038)
+        }
+    }
+
+    override fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?) {
+        publicToiletItem?.let {
+            for (item in publicToiletItem) {
+                val lng = item.location[0]
+                val lat = item.location[1]
+
+                //마커 찍음
+                mMap.addMarker(MarkerOptions().position(LatLng(lng, lat)).title("Marker in Sydney"))
+            }
+        }
+    }
+    override fun showSmokeInfo() {
 
     }
     override fun showLoadFail() {
@@ -565,7 +434,6 @@ class MainActivity : BaseActivity(), MainContract.View,
         private val FIELD_ERROR_PROCESSING = "errorProcessing"
 
         private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
-        private val BOUNDS_GREATER_SYDNEY = LatLngBounds(
-                LatLng(-34.041458, 150.790100), LatLng(-33.682247, 151.383362))
+        private val BOUNDS_GREATER_SYDNEY = LatLngBounds(LatLng(37.56, 126.97), LatLng(37.56, 126.97))
     }
 }

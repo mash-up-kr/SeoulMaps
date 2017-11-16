@@ -31,7 +31,7 @@ class MainPresenter : MainContract.Presenter {
         }
     }
 
-    override fun getPublicToiletInfo(lat: Float?, lng: Float?) {
+    override fun getPublicToiletInfo(lat: Double?, lng: Double?) {
         toiletInfo?.getToiletInfoService(lat, lng)?.enqueue(object : Callback<PublicToiletInfo> {
             override fun onResponse(call: Call<PublicToiletInfo>?, response: Response<PublicToiletInfo>?) {
                 if(response?.isSuccessful ?: false) {
@@ -40,7 +40,7 @@ class MainPresenter : MainContract.Presenter {
                     if(publicToliletInfo?.message.equals("Success")) {
                         val publicToiletItem: List<PublicToiletItem>? = publicToliletInfo?.results
 
-                        view?.getToiletInfo(publicToiletItem)
+                        view?.showToiletInfo(publicToiletItem)
                     } else
                         view?.showLoadFail()
                 } else
@@ -54,7 +54,7 @@ class MainPresenter : MainContract.Presenter {
         })
     }
 
-    override fun getPublicSmokeInfo(lat: Float?, lng: Float?) {
+    override fun getPublicSmokeInfo(lat: Double?, lng: Double?) {
         smokeInfo?.getSmokeInfoService(lat, lng)?.enqueue(object : Callback<PublicSmokeInfo> {
             override fun onResponse(call: Call<PublicSmokeInfo>?, response: Response<PublicSmokeInfo>?) {
                 if(response?.isSuccessful == true) {

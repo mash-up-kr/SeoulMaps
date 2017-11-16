@@ -15,6 +15,6 @@ object PublicInfoDataSource {
         publicServiceInterface = createRetrofit(PublicServiceInterface::class.java, BASE_URL)
     }
 
-    fun getToiletInfoService(lat: Float?, lng: Float?) = publicServiceInterface.getToiletService(lat, lng)
-    fun getSmokeInfoService(lat: Float?, lng: Float?) = publicServiceInterface.getSmokeService(lat, lng)
+    fun getToiletInfoService(lat: Double?, lng: Double?) = publicServiceInterface.getToiletService(lat, lng)
+    fun getSmokeInfoService(lat: Double?, lng: Double?) = publicServiceInterface.getSmokeService(lat, lng)
 }

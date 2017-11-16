@@ -13,8 +13,8 @@ interface MainContract {
 
     interface View {
         fun getPlaceInfo(placeItem: AutocompletePrediction?)
-        fun getToiletInfo(publicToiletItem: List<PublicToiletItem>?)
-        fun getSmokeInfo()
+        fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?)
+        fun showSmokeInfo()
         fun showLoadFail()
     }
 
@@ -35,7 +35,7 @@ interface MainContract {
         /**
          * 공중 서비스 정보를 불러온다.
          */
-        fun getPublicToiletInfo(lat: Float?, lng: Float?)
-        fun getPublicSmokeInfo(lat: Float?, lng: Float?)
+        fun getPublicToiletInfo(lat: Double?, lng: Double?)
+        fun getPublicSmokeInfo(lat: Double?, lng: Double?)
     }
 }

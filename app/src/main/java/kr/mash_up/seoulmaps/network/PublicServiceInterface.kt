@@ -12,9 +12,9 @@ import retrofit2.http.Query
 interface PublicServiceInterface {
     @GET("/location/get/toilet")
     fun getToiletService(
-            @Query("lat") userLat: Float?, @Query("lng") userLong: Float?): Call<PublicToiletInfo>
+            @Query("lat") userLat: Double?, @Query("lng") userLong: Double?): Call<PublicToiletInfo>
 
     @GET("/location/get/smoke")
     fun getSmokeService(
-            @Query("lat") userLat: Float?, @Query("lng") userLong: Float?): Call<PublicSmokeInfo>
+            @Query("lat") userLat: Double?, @Query("lng") userLong: Double?): Call<PublicSmokeInfo>
 }
