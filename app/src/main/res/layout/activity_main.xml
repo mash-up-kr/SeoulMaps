@@ -109,5 +109,21 @@
             android:layout_height="wrap_content"
             android:src="@drawable/toilet" />
     </com.sa90.materialarcmenu.ArcMenu>
+    <!-- bottom sheet -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:orientation="vertical"
+        app:behavior_hideable="false"
+        app:behavior_peekHeight="200dp"
+        app:layout_behavior="@string/bottom_sheet_behavior">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list_item_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
 </android.support.design.widget.CoordinatorLayout>
 

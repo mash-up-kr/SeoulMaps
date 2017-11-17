@@ -7,7 +7,7 @@ import kr.mash_up.seoulmaps.network.createRetrofit
  * Created by Tak on 2017. 10. 29..
  */
 object PublicInfoDataSource {
-    val BASE_URL = "http://52.78.80.125:3000"
+    val BASE_URL = "http://52.78.80.125:3003"
 
     private val publicServiceInterface: PublicServiceInterface
 

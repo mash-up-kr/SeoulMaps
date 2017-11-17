@@ -13,7 +13,7 @@ interface MainContract {
 
     interface View {
         fun getPlaceInfo(placeItem: AutocompletePrediction?)
-        fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?)
+        fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?, lat: Double?, lng: Double?)
         fun showSmokeInfo()
         fun showLoadFail()
     }

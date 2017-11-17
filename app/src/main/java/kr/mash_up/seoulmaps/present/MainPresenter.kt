@@ -40,15 +40,17 @@ class MainPresenter : MainContract.Presenter {
                     if(publicToliletInfo?.message.equals("Success")) {
                         val publicToiletItem: List<PublicToiletItem>? = publicToliletInfo?.results
 
-                        view?.showToiletInfo(publicToiletItem)
+                        view?.showToiletInfo(publicToiletItem, lat, lng)
                     } else
                         view?.showLoadFail()
+
                 } else
                     view?.showLoadFail()
             }
 
             override fun onFailure(call: Call<PublicToiletInfo>?, t: Throwable?) {
-
+                view?.showLoadFail()
+                t?.printStackTrace()
             }
 
         })

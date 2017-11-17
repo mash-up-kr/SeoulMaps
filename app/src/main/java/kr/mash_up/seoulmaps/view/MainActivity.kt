@@ -36,8 +36,10 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kr.mash_up.seoulmaps.R
 import kr.mash_up.seoulmaps.R.drawable.search
 import kr.mash_up.seoulmaps.SeoulMapApplication
+import kr.mash_up.seoulmaps.adapter.BottomSheetAdapter
 import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter
 import kr.mash_up.seoulmaps.base.BaseActivity
+import kr.mash_up.seoulmaps.data.BottomSheetItem
 import kr.mash_up.seoulmaps.data.PublicToiletItem
 import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 import kr.mash_up.seoulmaps.present.MainContract
@@ -61,6 +63,11 @@ class MainActivity : BaseActivity(), MainContract.View,
     private var mLocationPermissionGranted: Boolean = false
 
     private var category: String = ""
+
+    // User for bottom sheet
+    private val bottomAdapter: BottomSheetAdapter by lazy {
+        BottomSheetAdapter(this)
+    }
 
     // Used for location search
     private val mAdapter: PlaceAutocompleteAdapter by lazy {
@@ -391,37 +398,51 @@ class MainActivity : BaseActivity(), MainContract.View,
         val lng = place.latLng.longitude
         callPublicService(lat, lng)
 
-        //줌 이동
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
-
         places.release()
     }
 
     private fun callPublicService(lat: Double, lng: Double) {
         when(category) {
-            "toilet" -> presenter.getPublicToiletInfo(202652.047 ,444755.038)
-            "smoke" -> presenter.getPublicSmokeInfo(202652.047, 444755.038)
+            "toilet" -> presenter.getPublicToiletInfo(37.5022,127.0299)
+            "smoke" -> presenter.getPublicSmokeInfo(37.5022, 127.0299)
         }
     }
 
-    override fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?) {
+    override fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?, lat: Double?, lng: Double?) {
+        Toast.makeText(SeoulMapApplication.context, "주변 공중화장실 정보입니다.", Toast.LENGTH_SHORT).show()
         publicToiletItem?.let {
             for (item in publicToiletItem) {
-                val lng = item.location[0]
                 val lat = item.location[1]
+                val lng = item.location[0]
 
                 //마커 찍음
-                mMap.addMarker(MarkerOptions().position(LatLng(lng, lat)).title("Marker in Sydney"))
+                Log.d("latlngitem", lat.toString() + "," + lng.toString())
+                mMap.addMarker(MarkerOptions().position(LatLng(lat, lng)).title("Marker in Sydney"))
             }
+            //TODO: null을 코틀린스럽게
+            //줌 이동
+            if(lat != null && lng != null)
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
+
+            //TODO: 형식에 맞게 값을 넣어줘야함.
+            val bottomSheetList: List<BottomSheetItem> = ArrayList()
+            setBottomSheet(bottomSheetList)
         }
     }
+
     override fun showSmokeInfo() {
 
     }
+    private fun setBottomSheet(publicItem: List<BottomSheetItem>) =
+        list_item_recycler_view.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.VERTICAL, false)
+            bottomAdapter.add(publicItem)
+            adapter = bottomAdapter
+        }
+
     override fun showLoadFail() {
         Toast.makeText(SeoulMapApplication.context, "데이터를 가져오지 못하였습니다.", Toast.LENGTH_SHORT).show()
     }
-
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName
