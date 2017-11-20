@@ -41,6 +41,29 @@ class SharedPreferencesUtil {
         }
     }
 
+    var placeLat: Float?
+    get() = prefs?.getFloat("placeLat", -1.toFloat())
+    set(value) {
+        prefs?.edit()?.let {
+            if(value == null)
+                it.remove("placeLat")
+            else
+                it.putFloat("placeLat", value)
+            it.commit()
+        }
+    }
+
+    var placeLng: Float?
+        get() = prefs?.getFloat("placeLng", -1.toFloat())
+        set(value) {
+            prefs?.edit()?.let {
+                if(value == null)
+                    it.remove("placeLng")
+                else
+                    it.putFloat("placeLng", value)
+                it.commit()
+            }
+        }
 }
 //var userId: String?
 //    get() = prefs?.getString("userId", null)

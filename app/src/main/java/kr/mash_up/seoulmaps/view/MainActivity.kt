@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
@@ -16,8 +17,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.TextView
 import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
@@ -53,8 +52,9 @@ import kotlin.collections.ArrayList
  * Created by wooyoungki on 2017. 7. 24..
  */
 
-class MainActivity : BaseActivity(), MainContract.View,
+class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickListener,
         OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
+
 
     private lateinit var mMap: GoogleMap
     private lateinit var mapFragment: SupportMapFragment
@@ -115,8 +115,8 @@ class MainActivity : BaseActivity(), MainContract.View,
     @Override
     public override fun onResume() {
         super.onResume()
-        val lat = SharedPreferencesUtil.newInstance()?.userLat
-        val lng = SharedPreferencesUtil.newInstance()?.userLong
+        val lat = SharedPreferencesUtil.newInstance()?.placeLat
+        val lng = SharedPreferencesUtil.newInstance()?.placeLng
 
         callPublicService(lat?.toDouble(), lng?.toDouble())
     }
@@ -185,7 +185,13 @@ class MainActivity : BaseActivity(), MainContract.View,
     private fun showMyLocation(location: Location) {
         val lat = location.latitude
         val lng = location.longitude
-        mMap.addMarker(MarkerOptions().position(LatLng(37.5022, 127.0299)).title("내 위치"))
+        SharedPreferencesUtil.newInstance()?.userLat = 37.5022.toFloat()    //lat
+        SharedPreferencesUtil.newInstance()?.userLong = 127.0299.toFloat()  //lng
+
+        mMap.addMarker(MarkerOptions()
+                .position(LatLng(37.5022, 127.0299))
+                .title("내 위치")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_me)))
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.5022, 127.0299), DEFAULT_ZOOM.toFloat()))
     }
 
@@ -237,6 +243,13 @@ class MainActivity : BaseActivity(), MainContract.View,
             toolbar?.apply {
                 setNavigationIcon(search)
                 setOnClickListener { showSearchLayout() }
+                cancel.setOnClickListener(object : View.OnClickListener{
+                    override fun onClick(v: View?) {
+                        bottom_sheet.visibility = View.INVISIBLE
+                        Toast.makeText(this@MainActivity, "Cancel", Toast.LENGTH_SHORT).show()
+                    }
+
+                })
             }
 
     private fun showSearchLayout() {
@@ -250,32 +263,32 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     override fun onMapReady(map: GoogleMap) {
         mMap = map
-        // Use a custom info window adapter to handle multiple lines of text in the
-        // info window contents.
-        mMap.setInfoWindowAdapter(object : GoogleMap.InfoWindowAdapter {
-            override // Return null here, so that getInfoContents() is called next.
-            fun getInfoWindow(arg0: Marker): View? {
-                return null
-            }
-
-            override fun getInfoContents(marker: Marker): View {
-                // Inflate the layouts for the info window, title and snippet.
-                val infoWindow = layoutInflater.inflate(R.layout.custom_info_contents, findViewById(R.id.map) as FrameLayout, false)
-
-                val title = infoWindow.findViewById(R.id.title) as TextView
-                title.text = marker.title
-
-                val snippet = infoWindow.findViewById(R.id.snippet) as TextView
-                snippet.text = marker.snippet
-
-                return infoWindow
-            }
-        })
+        mMap.setOnMarkerClickListener(this)
 
         // Turn on the My Location layer and the related control on the map.
         updateLocationUI()
         // Get the current location of the device and set the position of the map.
         getDeviceLocation()
+    }
+
+    override fun onMarkerClick(marker: Marker?): Boolean {
+        Toast.makeText(this@MainActivity, "marker clicked", Toast.LENGTH_SHORT).show()
+
+        val coordinate = marker?.position
+        val markerLat = coordinate?.latitude
+        val markerLng = coordinate?.longitude
+
+        val userLat = SharedPreferencesUtil.newInstance()?.userLat?.toDouble()
+        val userLng = SharedPreferencesUtil.newInstance()?.userLong?.toDouble()
+
+        if(markerLat != null && markerLng != null && userLat != null && userLng != null) {
+            mMap.addPolyline(PolylineOptions()
+                    .add(LatLng(markerLat, markerLng), LatLng(userLat, userLng))
+                    .width(12.toFloat())
+                    .color(Color.GREEN))
+        }
+
+        return false
     }
 
     private fun getDeviceLocation() {
@@ -301,9 +314,15 @@ class MainActivity : BaseActivity(), MainContract.View,
         if (mCameraPosition != null) {
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(mCameraPosition))
         } else if (mLastKnownLocation != null) {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                    LatLng(mLastKnownLocation!!.latitude,
-                            mLastKnownLocation!!.longitude), DEFAULT_ZOOM.toFloat()))
+            val lat = mLastKnownLocation?.latitude
+            val lng = mLastKnownLocation?.longitude
+            if(lat != null && lng != null) {
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                        LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
+
+                SharedPreferencesUtil.newInstance()?.userLat = lat.toFloat()
+                SharedPreferencesUtil.newInstance()?.userLong = lng.toFloat()
+            }
         } else {
             Log.d(TAG, "Current location is null. Using defaults.")
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocationSeoul, DEFAULT_ZOOM.toFloat()))
@@ -404,7 +423,7 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     override fun onSaveInstanceState(savedInstanceState: Bundle?) {
         super.onSaveInstanceState(savedInstanceState)
-        savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap?.cameraPosition)
+        savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
         savedInstanceState?.putParcelable(KEY_LOCATION, mLastKnownLocation)
         savedInstanceState?.putBoolean(FIELD_ERROR_PROCESSING, isErrorProcessing)
     }
@@ -446,6 +465,8 @@ class MainActivity : BaseActivity(), MainContract.View,
         search_layout.visibility = View.GONE
         dialogIsVisible = false
 
+        search_result.text = primaryText.toString()
+
         val placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId)
         placeResult.setResultCallback(mUpdatePlaceDetailsCallback)
     }
@@ -466,8 +487,8 @@ class MainActivity : BaseActivity(), MainContract.View,
     }
 
     private fun callPublicService(lat: Double?, lng: Double?) {
-        SharedPreferencesUtil.newInstance()?.userLat = 37.5022.toFloat()    //lat
-        SharedPreferencesUtil.newInstance()?.userLong = 127.0299.toFloat()  //lng
+        SharedPreferencesUtil.newInstance()?.placeLat = 37.5022.toFloat()    //lat
+        SharedPreferencesUtil.newInstance()?.placeLng = 127.0299.toFloat()  //lng
         when(category) {
             "toilet" -> presenter.getPublicToiletInfo(37.5022,127.0299)
             "smoke" -> presenter.getPublicSmokeInfo(37.5022, 127.0299)
@@ -475,6 +496,7 @@ class MainActivity : BaseActivity(), MainContract.View,
     }
 
     override fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?, lat: Double?, lng: Double?) {
+        bottom_sheet.visibility = View.VISIBLE
         Toast.makeText(SeoulMapApplication.context, "주변 공중화장실 정보입니다.", Toast.LENGTH_SHORT).show()
         publicToiletItem?.let {
             val bottomSheetList = ArrayList<BottomSheetItem>()
@@ -484,7 +506,10 @@ class MainActivity : BaseActivity(), MainContract.View,
                 val lng = item.location[0]
 
                 //마커 찍음
-                mMap.addMarker(MarkerOptions().position(LatLng(lat, lng)).title(item.locationName))
+                mMap.addMarker(MarkerOptions()
+                        .position(LatLng(lat, lng))
+                        .title(item.locationName)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_item)))
                 //마커로 찍은 장소 만들기
 //                addPlace(item, lat, lng)
                 //BottomSheet 만들어줌
@@ -511,10 +536,10 @@ class MainActivity : BaseActivity(), MainContract.View,
 
         Places.GeoDataApi.addPlace(mGoogleApiClient, place)
             .setResultCallback({ places ->
-                    Log.i(TAG, "Place add result: " + places.getStatus().toString());
-                    Log.i(TAG, "Added place: " + places.get(0).getName().toString());
-                    places.release();
-            });
+                    Log.i(TAG, "Place add result: " + places.status.toString())
+                Log.i(TAG, "Added place: " + places.get(0).name.toString())
+                places.release()
+            })
     }
 
     override fun showSmokeInfo() {
