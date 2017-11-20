@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Location
+import android.net.Uri
 import android.os.Bundle
 import android.support.annotation.UiThread
 import android.support.v4.app.ActivityCompat
@@ -22,10 +23,10 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResultCallback
+import com.google.android.gms.location.LocationListener
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.places.AutocompletePrediction
-import com.google.android.gms.location.places.PlaceBuffer
-import com.google.android.gms.location.places.Places
+import com.google.android.gms.location.places.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -44,6 +45,9 @@ import kr.mash_up.seoulmaps.data.PublicToiletItem
 import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 import kr.mash_up.seoulmaps.present.MainContract
 import kr.mash_up.seoulmaps.present.MainPresenter
+import kr.mash_up.seoulmaps.util.SharedPreferencesUtil
+import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * Created by wooyoungki on 2017. 7. 24..
@@ -109,6 +113,15 @@ class MainActivity : BaseActivity(), MainContract.View,
     }
 
     @Override
+    public override fun onResume() {
+        super.onResume()
+        val lat = SharedPreferencesUtil.newInstance()?.userLat
+        val lng = SharedPreferencesUtil.newInstance()?.userLong
+
+        callPublicService(lat?.toDouble(), lng?.toDouble())
+    }
+
+    @Override
     public override fun onStop() {
         super.onStop()
         mGoogleApiClient.disconnect()
@@ -118,11 +131,62 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     override fun initView() {
         setGoogleMap()
+        setMyLocation()
         setUpToolbar()
         setArcMenu()
         setSearchRecyclerView()
         setSearchPlaceTextView()
         showCategoryDialog()
+    }
+
+    private fun setMyLocation() {
+        my_location.bringToFront()
+        my_location.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) {
+                getLocation()
+            }
+        })
+    }
+
+    private fun getLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION) && !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), RC_PERMISSION)
+            }
+
+        }
+        val location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
+        location?.let {
+            showMyLocation(it)
+        }
+
+        //업데이트 요청을 설정
+        val request = LocationRequest()
+        //최소업데이트 시간(5초)
+        request.fastestInterval = 5000
+        //실제 업데이트 시간
+        request.interval = 7000
+        //최소 업데이트 거리(meter)
+        request.smallestDisplacement = 3f
+
+        request.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+
+        //리스너 등록
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, mListener)
+    }
+
+    var mListener: LocationListener = LocationListener {
+        location -> showMyLocation(location)
+    }
+
+    private fun showMyLocation(location: Location) {
+        val lat = location.latitude
+        val lng = location.longitude
+        mMap.addMarker(MarkerOptions().position(LatLng(37.5022, 127.0299)).title("내 위치"))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.5022, 127.0299), DEFAULT_ZOOM.toFloat()))
     }
 
     private fun setSearchPlaceTextView() =
@@ -340,7 +404,7 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     override fun onSaveInstanceState(savedInstanceState: Bundle?) {
         super.onSaveInstanceState(savedInstanceState)
-        savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
+        savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap?.cameraPosition)
         savedInstanceState?.putParcelable(KEY_LOCATION, mLastKnownLocation)
         savedInstanceState?.putBoolean(FIELD_ERROR_PROCESSING, isErrorProcessing)
     }
@@ -401,7 +465,9 @@ class MainActivity : BaseActivity(), MainContract.View,
         places.release()
     }
 
-    private fun callPublicService(lat: Double, lng: Double) {
+    private fun callPublicService(lat: Double?, lng: Double?) {
+        SharedPreferencesUtil.newInstance()?.userLat = 37.5022.toFloat()    //lat
+        SharedPreferencesUtil.newInstance()?.userLong = 127.0299.toFloat()  //lng
         when(category) {
             "toilet" -> presenter.getPublicToiletInfo(37.5022,127.0299)
             "smoke" -> presenter.getPublicSmokeInfo(37.5022, 127.0299)
@@ -411,13 +477,19 @@ class MainActivity : BaseActivity(), MainContract.View,
     override fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?, lat: Double?, lng: Double?) {
         Toast.makeText(SeoulMapApplication.context, "주변 공중화장실 정보입니다.", Toast.LENGTH_SHORT).show()
         publicToiletItem?.let {
+            val bottomSheetList = ArrayList<BottomSheetItem>()
+
             for (item in publicToiletItem) {
                 val lat = item.location[1]
                 val lng = item.location[0]
 
                 //마커 찍음
-                Log.d("latlngitem", lat.toString() + "," + lng.toString())
-                mMap.addMarker(MarkerOptions().position(LatLng(lat, lng)).title("Marker in Sydney"))
+                mMap.addMarker(MarkerOptions().position(LatLng(lat, lng)).title(item.locationName))
+                //마커로 찍은 장소 만들기
+//                addPlace(item, lat, lng)
+                //BottomSheet 만들어줌
+                val bottomItem = BottomSheetItem(R.drawable.toilet, item.locationName, item.toiletType, "1.0km")
+                bottomSheetList.add(bottomItem)
             }
             //TODO: null을 코틀린스럽게
             //줌 이동
@@ -425,9 +497,24 @@ class MainActivity : BaseActivity(), MainContract.View,
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
 
             //TODO: 형식에 맞게 값을 넣어줘야함.
-            val bottomSheetList: List<BottomSheetItem> = ArrayList()
             setBottomSheet(bottomSheetList)
         }
+    }
+
+    private fun addPlace(item: PublicToiletItem, lat: Double, lng: Double) {
+        val place = AddPlaceRequest(item.locationName,
+            LatLng(lat, lng), item.toiletType,
+            Collections.singletonList(Place.TYPE_OTHER),
+            "",
+            Uri.parse("")
+        )
+
+        Places.GeoDataApi.addPlace(mGoogleApiClient, place)
+            .setResultCallback({ places ->
+                    Log.i(TAG, "Place add result: " + places.getStatus().toString());
+                    Log.i(TAG, "Added place: " + places.get(0).getName().toString());
+                    places.release();
+            });
     }
 
     override fun showSmokeInfo() {
@@ -446,7 +533,7 @@ class MainActivity : BaseActivity(), MainContract.View,
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName
-        private val DEFAULT_ZOOM = 15
+        private val DEFAULT_ZOOM = 16
         private val KEY_CAMERA_POSITION = "camera_position"
         private val KEY_LOCATION = "location"
 

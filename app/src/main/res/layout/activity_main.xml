@@ -9,7 +9,7 @@
         android:layout_width="350dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center|top"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="13dp"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
         android:theme="@style/AppTheme.AppBarOverlay">
@@ -26,6 +26,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"/>
         </android.support.v7.widget.Toolbar>
+
         <RelativeLayout
             android:id="@+id/search_layout"
             android:layout_width="match_parent"
@@ -48,13 +49,13 @@
                 android:textColor="#000000"
                 android:maxLines="1"
                 android:inputType="textAutoComplete"/>
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_toLeftOf="@+id/search_location"
-                android:layout_centerInParent="true"
-                android:paddingRight="8dp"
-                android:src="@drawable/my_location"/>
+            <!--<ImageView-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_toLeftOf="@+id/search_location"-->
+                <!--android:layout_centerInParent="true"-->
+                <!--android:paddingRight="8dp"-->
+                <!--android:src="@drawaloction"/>-->
             <ImageView
                 android:id="@+id/search_location"
                 android:layout_width="wrap_content"
@@ -64,6 +65,14 @@
                 android:src="@drawable/search_location"/>
         </RelativeLayout>
     </android.support.design.widget.AppBarLayout>
+    <ImageView
+        android:id="@+id/my_location"
+        android:src="@drawable/loc"
+        android:layout_marginTop="85dp"
+        android:layout_marginRight="30dp"
+        android:layout_gravity="right"
+        android:layout_width="25dp"
+        android:layout_height="25dp" />
 
     <FrameLayout
         android:id="@+id/container"
@@ -89,12 +98,31 @@
         android:layout_height="match_parent"
         tools:context=".view.MainActivity" />
 
+    <!-- bottom sheet -->
+    <LinearLayout
+        android:id="@+id/bottom_sheet"
+        android:layout_width="match_parent"
+        android:layout_height="900dp"
+        android:background="#FAFAFA"
+        android:orientation="vertical"
+        app:behavior_hideable="false"
+        app:behavior_peekHeight="70dp"
+        app:layout_behavior="@string/bottom_sheet_behavior">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list_item_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
     <com.sa90.materialarcmenu.ArcMenu
         android:id="@+id/arcMenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         app:menu_open="arc_left"
+        app:layout_anchor="@id/bottom_sheet"
+        app:layout_anchorGravity="top|end"
         app:fabSize="normal"
         app:menu_scr="@android:drawable/ic_dialog_dialer">
         <android.support.design.widget.FloatingActionButton
@@ -109,21 +137,5 @@
             android:layout_height="wrap_content"
             android:src="@drawable/toilet" />
     </com.sa90.materialarcmenu.ArcMenu>
-    <!-- bottom sheet -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/colorPrimary"
-        android:orientation="vertical"
-        app:behavior_hideable="false"
-        app:behavior_peekHeight="200dp"
-        app:layout_behavior="@string/bottom_sheet_behavior">
-
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/list_item_recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
-    </LinearLayout>
 </android.support.design.widget.CoordinatorLayout>
 
