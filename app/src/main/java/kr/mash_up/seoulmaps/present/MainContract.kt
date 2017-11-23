@@ -1,7 +1,9 @@
 package kr.mash_up.seoulmaps.present
 
 import com.google.android.gms.location.places.AutocompletePrediction
+import kr.mash_up.seoulmaps.adapter.contract.BottomAdapterContract
 import kr.mash_up.seoulmaps.adapter.contract.PlaceAdapterContract
+import kr.mash_up.seoulmaps.data.BottomSheetItem
 import kr.mash_up.seoulmaps.data.PublicToiletItem
 import kr.mash_up.seoulmaps.data.model.PublicInfoDataSource
 
@@ -16,6 +18,8 @@ interface MainContract {
         fun showToiletInfo(publicToiletItem: List<PublicToiletItem>?, lat: Double?, lng: Double?)
         fun showSmokeInfo()
         fun showLoadFail()
+
+        fun showBottomItemInfo(bottomSheetItem: BottomSheetItem?, viewId: Int)
     }
 
     interface Presenter {
@@ -24,7 +28,8 @@ interface MainContract {
         /**
          * Adapter에 대한 View정의
          */
-        var adapterView: PlaceAdapterContract.View?
+        var placeAdapterView: PlaceAdapterContract.View?
+        var bottomAdapterView: BottomAdapterContract.View?
 
         /**
          * Model

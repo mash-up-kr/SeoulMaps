@@ -1,5 +1,6 @@
 package kr.mash_up.seoulmaps.adapter.contract
 
+import com.google.android.gms.location.places.AutocompletePrediction
 import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter
 
 /**
@@ -12,6 +13,6 @@ interface PlaceAdapterContract {
     }
 
     interface Model {
-
+        fun getItem(position: Int): AutocompletePrediction?
     }
 }

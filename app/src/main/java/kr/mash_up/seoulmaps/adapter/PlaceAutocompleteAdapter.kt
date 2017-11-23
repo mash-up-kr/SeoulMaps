@@ -34,7 +34,8 @@ import java.util.concurrent.TimeUnit
  */
 class PlaceAutocompleteAdapter(private val mContext: Context, private val mGoogleApiClient: GoogleApiClient, private var mBounds: LatLngBounds?, private val mPlaceFilter: AutocompleteFilter?):
         RecyclerView.Adapter<PlaceViewHolder>(), Filterable,
-        PlaceAdapterContract.View {
+        PlaceAdapterContract.View,
+        PlaceAdapterContract.Model {
 
     private var mResultList: ArrayList<AutocompletePrediction>? = null
 
@@ -46,14 +47,10 @@ class PlaceAutocompleteAdapter(private val mContext: Context, private val mGoogl
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaceViewHolder
             = PlaceViewHolder(mContext, parent, onPlaceItemClickListener)
 
-    fun getItem(position: Int): AutocompletePrediction? = mResultList?.get(position)
+    override fun getItem(position: Int): AutocompletePrediction? = mResultList?.get(position)
 
     override fun onBindViewHolder(holder: PlaceViewHolder?, position: Int) {
         holder?.bindView(getItem(position), position)
-
-//        val placeItem = getItem(position)
-//        holder.placeTitle.text = placeItem?.getPrimaryText(STYLE_BOLD)
-//        holder.placeDelete.setImageResource(R.drawable.item_delete)
     }
 
     override fun getItemCount(): Int = if(mResultList != null) (mResultList as ArrayList<AutocompletePrediction>).size else 0

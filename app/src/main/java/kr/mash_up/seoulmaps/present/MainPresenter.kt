@@ -1,8 +1,11 @@
 package kr.mash_up.seoulmaps.present
 
 import com.google.android.gms.location.places.AutocompletePrediction
+import kr.mash_up.seoulmaps.adapter.BottomSheetAdapter
 import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter
+import kr.mash_up.seoulmaps.adapter.contract.BottomAdapterContract
 import kr.mash_up.seoulmaps.adapter.contract.PlaceAdapterContract
+import kr.mash_up.seoulmaps.data.BottomSheetItem
 import kr.mash_up.seoulmaps.data.PublicSmokeInfo
 import kr.mash_up.seoulmaps.data.PublicToiletInfo
 import kr.mash_up.seoulmaps.data.PublicToiletItem
@@ -16,17 +19,25 @@ import retrofit2.Response
  */
 
 class MainPresenter : MainContract.Presenter {
-
     override var view: MainContract.View? = null    //MainActivity
 
     override var toiletInfo: PublicInfoDataSource? = null
     override var smokeInfo: PublicInfoDataSource? = null
 
-    override var adapterView: PlaceAdapterContract.View? = null
+    override var placeAdapterView: PlaceAdapterContract.View? = null
     set(value) {
         value?.onPlaceItemClickListener = object : PlaceAutocompleteAdapter.OnPlaceItemClickListener {
             override fun onItemClick(placeItem: AutocompletePrediction?) {
                 view?.getPlaceInfo(placeItem)
+            }
+        }
+    }
+
+    override var bottomAdapterView: BottomAdapterContract.View? = null
+    set(value) {
+        value?.onBottomItemClickListener = object : BottomSheetAdapter.OnBottomPlaceClickListener {
+            override fun onItemClick(bottomSheetItem: BottomSheetItem?, viewId: Int) {
+                view?.showBottomItemInfo(bottomSheetItem, viewId)
             }
         }
     }

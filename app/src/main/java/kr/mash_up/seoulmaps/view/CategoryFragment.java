@@ -16,12 +16,12 @@ import kr.mash_up.seoulmaps.listener.OnItemClickListener;
  * Created by Tak on 2017. 8. 13..
  */
 
-public class MainFragment extends DialogFragment {
-    public static final String TAG = MainFragment.class.getSimpleName();
+public class CategoryFragment extends DialogFragment {
+    public static final String TAG = CategoryFragment.class.getSimpleName();
     Unbinder unbinder;
 
-    public static MainFragment newInstance() {
-        MainFragment fragment = new MainFragment();
+    public static CategoryFragment newInstance() {
+        CategoryFragment fragment = new CategoryFragment();
         return fragment;
     }
 
@@ -50,7 +50,7 @@ public class MainFragment extends DialogFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_main_dialog, container, false);
+        View view = inflater.inflate(R.layout.fragment_category_dialog, container, false);
         unbinder = ButterKnife.bind(this, view);
 
         return view;

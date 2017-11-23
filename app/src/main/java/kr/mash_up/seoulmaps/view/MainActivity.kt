@@ -67,6 +67,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
     private var mLocationPermissionGranted: Boolean = false
 
     private var category: String = ""
+    private var polyline: Polyline? = null
 
     // User for bottom sheet
     private val bottomAdapter: BottomSheetAdapter by lazy {
@@ -108,7 +109,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
     public override fun onStart() {
         super.onStart()
         mGoogleApiClient.connect()
-        presenter.adapterView = mAdapter
+        presenter.placeAdapterView = mAdapter
         search_recycler_view.adapter = mAdapter
     }
 
@@ -146,53 +147,6 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
                 getLocation()
             }
         })
-    }
-
-    private fun getLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION) && !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
-
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), RC_PERMISSION)
-            }
-
-        }
-        val location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
-        location?.let {
-            showMyLocation(it)
-        }
-
-        //업데이트 요청을 설정
-        val request = LocationRequest()
-        //최소업데이트 시간(5초)
-        request.fastestInterval = 5000
-        //실제 업데이트 시간
-        request.interval = 7000
-        //최소 업데이트 거리(meter)
-        request.smallestDisplacement = 3f
-
-        request.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-
-        //리스너 등록
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, mListener)
-    }
-
-    var mListener: LocationListener = LocationListener {
-        location -> showMyLocation(location)
-    }
-
-    private fun showMyLocation(location: Location) {
-        val lat = location.latitude
-        val lng = location.longitude
-        SharedPreferencesUtil.newInstance()?.userLat = 37.5022.toFloat()    //lat
-        SharedPreferencesUtil.newInstance()?.userLong = 127.0299.toFloat()  //lng
-
-        mMap.addMarker(MarkerOptions()
-                .position(LatLng(37.5022, 127.0299))
-                .title("내 위치")
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_me)))
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.5022, 127.0299), DEFAULT_ZOOM.toFloat()))
     }
 
     private fun setSearchPlaceTextView() =
@@ -282,13 +236,58 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
         val userLng = SharedPreferencesUtil.newInstance()?.userLong?.toDouble()
 
         if(markerLat != null && markerLng != null && userLat != null && userLng != null) {
-            mMap.addPolyline(PolylineOptions()
+            if(polyline != null) {
+                polyline?.remove()
+            }
+            polyline = mMap.addPolyline(PolylineOptions()
                     .add(LatLng(markerLat, markerLng), LatLng(userLat, userLng))
                     .width(12.toFloat())
                     .color(Color.GREEN))
         }
 
         return false
+    }
+
+    private fun getLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION) && !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), RC_PERMISSION)
+            }
+
+        }
+        val location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
+        location?.let {
+            showMyLocation(it)
+        }
+
+        val request = LocationRequest()
+        request.fastestInterval = 5000
+        request.interval = 7000
+        request.smallestDisplacement = 3f
+        request.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+
+        //리스너 등록
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, mListener)
+    }
+
+    var mListener: LocationListener = LocationListener {
+        location -> showMyLocation(location)
+    }
+
+    private fun showMyLocation(location: Location) {
+        val lat = location.latitude
+        val lng = location.longitude
+        SharedPreferencesUtil.newInstance()?.userLat = 37.5022.toFloat()    //lat
+        SharedPreferencesUtil.newInstance()?.userLong = 127.0299.toFloat()  //lng
+
+        mMap.addMarker(MarkerOptions()
+                .position(LatLng(37.5022, 127.0299))
+                .title("내 위치")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_me)))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.5022, 127.0299), DEFAULT_ZOOM.toFloat()))
     }
 
     private fun getDeviceLocation() {
@@ -300,12 +299,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
-        /*
-     * Before getting the device location, you must check location
-     * permission, as described earlier in the tutorial. Then:
-     * Get the best and most recent location of the device, which may be
-     * null in rare cases when a location is not available.
-     */
+
         if (mLocationPermissionGranted) {
             mLastKnownLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
         }
@@ -394,7 +388,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
     }
 
     private fun showCategoryDialog() {
-        val fm = MainFragment.newInstance()
+        val fm = CategoryFragment.newInstance()
         fm.setOnClickListener { item ->
             category = item
             mLastKnownLocation?.let {
@@ -405,7 +399,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
                 callPublicService(lat, lng)
             }
         }
-        fm.show(supportFragmentManager, MainFragment.TAG)
+        fm.show(supportFragmentManager, CategoryFragment.TAG)
     }
 
     override fun onConnectionSuspended(i: Int) {}
@@ -513,7 +507,8 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
                 //마커로 찍은 장소 만들기
 //                addPlace(item, lat, lng)
                 //BottomSheet 만들어줌
-                val bottomItem = BottomSheetItem(R.drawable.toilet, item.locationName, item.toiletType, "1.0km")
+                val bottomItem = BottomSheetItem(R.drawable.toilet, item.locationName, item.toiletType, "1.0km",
+                        item.location[1], item.location[0])
                 bottomSheetList.add(bottomItem)
             }
             //TODO: null을 코틀린스럽게
@@ -549,8 +544,31 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
         list_item_recycler_view.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.VERTICAL, false)
             bottomAdapter.add(publicItem)
+            presenter.bottomAdapterView = bottomAdapter
             adapter = bottomAdapter
         }
+
+    override fun showBottomItemInfo(bottomSheetItem: BottomSheetItem?, viewId: Int) {
+        Toast.makeText(SeoulMapApplication.context, "2.0km", Toast.LENGTH_SHORT).show()
+
+        val bottomItemLat = bottomSheetItem?.lat
+        val bottomItemLng = bottomSheetItem?.lng
+
+        val userLat = SharedPreferencesUtil.newInstance()?.userLat?.toDouble()
+        val userLng = SharedPreferencesUtil.newInstance()?.userLong?.toDouble()
+
+        if(bottomItemLat != null && bottomItemLng != null && userLat != null && userLng != null) {
+            if(polyline != null) {
+                polyline?.remove()
+            }
+            polyline = mMap.addPolyline(PolylineOptions()
+                    .add(LatLng(bottomItemLat, bottomItemLng), LatLng(userLat, userLng))
+                    .width(12.toFloat())
+                    .color(Color.GREEN))
+        }
+
+        supportFragmentManager.beginTransaction().add(viewId, ReviewFragment.newInstance()).commit()
+    }
 
     override fun showLoadFail() {
         Toast.makeText(SeoulMapApplication.context, "데이터를 가져오지 못하였습니다.", Toast.LENGTH_SHORT).show()

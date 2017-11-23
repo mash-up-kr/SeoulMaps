@@ -27,20 +27,5 @@ class PlaceViewHolder(context: Context, parent: ViewGroup?, val onPlaceItemClick
                 onPlaceItemClickListener?.onItemClick(item)
             }
         }
-
-//        itemView?.let {
-//            with(it) {
-//                place_item_title.text = item?.getPrimaryText(StyleSpan(Typeface.BOLD))
-//                place_item_delete.setImageResource(R.drawable.item_delete)
-
-
-//        holder.placeTitle.text = placeItem?.getPrimaryText(STYLE_BOLD)
-//        holder.placeDelete.setImageResource(R.drawable.item_delete)
-//            }
-//        }
     }
-
-
-//    @BindView(R.id.place_item_title)
-//    @BindView(R.id.place_item_delete)
 }
