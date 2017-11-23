@@ -111,7 +111,7 @@
         tools:context=".view.MainActivity" />
 
     <!-- bottom sheet -->
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/bottom_sheet"
         android:layout_width="match_parent"
         android:layout_height="700dp"
@@ -119,14 +119,22 @@
         android:orientation="vertical"
         android:visibility="invisible"
         app:behavior_hideable="false"
-        app:behavior_peekHeight="70dp"
+        app:behavior_peekHeight="62dp"
         app:layout_behavior="@string/bottom_sheet_behavior">
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/list_item_recycler_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
-    </LinearLayout>
+    </RelativeLayout>
+    <!--<kr.mash_up.seoulmaps.CustomStarView-->
+        <!--android:id="@+id/indicator"-->
+        <!--xmlns:app="http://schemas.android.com/apk/res-auto"-->
+        <!--app:selected="1"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--&gt;-->
+    <!--</kr.mash_up.seoulmaps.CustomStarView>-->
 
     <com.sa90.materialarcmenu.ArcMenu
         android:id="@+id/arcMenu"
@@ -135,8 +143,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginBottom="35dp"
         app:menu_open="arc_left"
-        app:layout_anchor="@+id/bottom_sheet"
-        app:layout_anchorGravity="right|top"
+        app:layout_anchorGravity="right|bottom"
         app:fabSize="normal"
         app:menu_scr="@android:drawable/ic_dialog_dialer">
         <android.support.design.widget.FloatingActionButton
