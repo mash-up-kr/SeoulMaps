@@ -11,7 +11,7 @@
         android:layout_alignParentLeft="true"/>
     <ImageView
         android:id="@+id/place_item_delete"
-        android:src="@drawable/item_delete"
+        android:src="@drawable/ic_xx"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/place_item_title"

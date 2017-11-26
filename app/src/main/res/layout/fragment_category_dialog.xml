@@ -13,7 +13,7 @@
         android:gravity="center">
         <ImageView
             android:id="@+id/toilet"
-            android:src="@drawable/toilet"
+            android:src="@drawable/ic_maintoilet"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <TextView
@@ -30,7 +30,7 @@
         android:gravity="center">
         <ImageView
             android:id="@+id/smoke"
-            android:src="@drawable/smoke"
+            android:src="@drawable/ic_mainsmoking"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <TextView
