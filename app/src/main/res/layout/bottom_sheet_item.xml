@@ -1,46 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="62dp"
-    android:orientation="horizontal"
-    android:paddingTop="10dp"
-    android:paddingLeft="20dp"
-    android:paddingRight="20dp">
-
-    <ImageView
-        android:id="@+id/img"
-        android:layout_weight="0.2"
-        android:layout_width="0dp"
-        android:paddingTop="6dp"
-        android:paddingRight="10dp"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="30dp"/>
+<RelativeLayout android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <LinearLayout
-        android:orientation="vertical"
-        android:layout_weight="0.6"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content">
+        android:id="@+id/bottom_item"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="62dp"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp">
+
+        <ImageView
+            android:id="@+id/img"
+            android:layout_weight="0.2"
+            android:layout_width="0dp"
+            android:paddingTop="6dp"
+            android:paddingRight="10dp"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="30dp"/>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_weight="0.6"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <TextView
+                android:id="@+id/type"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
         <TextView
-            android:id="@+id/title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <TextView
-            android:id="@+id/type"
-            android:layout_width="match_parent"
+            android:id="@+id/distance"
+            android:layout_weight="0.2"
+            android:layout_width="0dp"
+            android:paddingTop="8dp"
+            android:paddingLeft="10dp"
             android:layout_height="wrap_content" />
     </LinearLayout>
-    <TextView
-        android:id="@+id/distance"
-        android:layout_weight="0.2"
-        android:layout_width="0dp"
-        android:paddingTop="8dp"
-        android:paddingLeft="10dp"
-        android:layout_height="wrap_content" />
+
     <FrameLayout
-        android:visibility="gone"
         android:id="@+id/review_container"
+        android:visibility="gone"
+        android:clickable="false"
+        android:layout_below="@+id/bottom_item"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-</LinearLayout>
+        android:background="#000000"
+        android:layout_height="100dp"/>
+
+</RelativeLayout>

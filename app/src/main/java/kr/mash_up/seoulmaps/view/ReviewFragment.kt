@@ -5,6 +5,7 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import kotlinx.android.synthetic.main.fragment_review.*
 import kr.mash_up.seoulmaps.R
 
 class ReviewFragment : Fragment() {
@@ -24,6 +25,10 @@ class ReviewFragment : Fragment() {
             =  inflater?.inflate(R.layout.fragment_review, container, false)
 
 
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        review_layout.bringToFront()
+    }
 
 
     companion object {

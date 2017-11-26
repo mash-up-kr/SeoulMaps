@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context="kr.mash_up.seoulmaps.view.MainActivity">
     <android.support.design.widget.AppBarLayout
-        android:layout_width="350dp"
+        android:layout_width="340dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center|top"
         android:layout_marginTop="13dp"
@@ -19,12 +19,13 @@
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_height="40dp"
                 android:background="?attr/colorPrimary"
+                android:layout_gravity="center"
                 app:popupTheme="@style/AppTheme.PopupOverlay">
                     <TextView
                         android:id="@+id/search_result"
-                        android:text="search"
+                        android:text="Search"
                         android:textColor="#000000"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -34,8 +35,8 @@
                         android:src="@drawable/cancel"
                         android:layout_gravity="right"
                         android:layout_marginRight="15dp"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp" />
+                        android:layout_width="16dp"
+                        android:layout_height="16dp" />
 
             </android.support.v7.widget.Toolbar>
         </FrameLayout>
@@ -51,7 +52,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"
                 android:layout_centerInParent="true"
-                android:src="@drawable/nav_back"/>
+                android:src="@drawable/ic_back"/>
             <AutoCompleteTextView
                 android:id="@+id/autocomplete_places"
                 android:layout_width="220dp"
@@ -74,17 +75,17 @@
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
                 android:layout_alignParentRight="true"
-                android:src="@drawable/search_location"/>
+                android:src="@drawable/ic_searchv"/>
         </RelativeLayout>
     </android.support.design.widget.AppBarLayout>
     <ImageView
         android:id="@+id/my_location"
-        android:src="@drawable/loc"
-        android:layout_marginTop="85dp"
-        android:layout_marginRight="30dp"
+        android:src="@drawable/ic_position"
+        android:layout_marginTop="70dp"
+        android:layout_marginRight="16dp"
         android:layout_gravity="right"
-        android:layout_width="25dp"
-        android:layout_height="25dp" />
+        android:layout_width="30dp"
+        android:layout_height="30dp" />
 
     <FrameLayout
         android:id="@+id/container"
@@ -111,30 +112,28 @@
         tools:context=".view.MainActivity" />
 
     <!-- bottom sheet -->
-    <RelativeLayout
+
+    <android.support.v4.widget.NestedScrollView
         android:id="@+id/bottom_sheet"
         android:layout_width="match_parent"
-        android:layout_height="700dp"
+        android:layout_height="450dp"
         android:background="#FAFAFA"
-        android:orientation="vertical"
         android:visibility="invisible"
         app:behavior_hideable="false"
         app:behavior_peekHeight="62dp"
         app:layout_behavior="@string/bottom_sheet_behavior">
-
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/list_item_recycler_view"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    </RelativeLayout>
-    <!--<kr.mash_up.seoulmaps.CustomStarView-->
-        <!--android:id="@+id/indicator"-->
-        <!--xmlns:app="http://schemas.android.com/apk/res-auto"-->
-        <!--app:selected="1"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--&gt;-->
-    <!--</kr.mash_up.seoulmaps.CustomStarView>-->
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/list_item_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </RelativeLayout>
+    </android.support.v4.widget.NestedScrollView>
+
 
     <com.sa90.materialarcmenu.ArcMenu
         android:id="@+id/arcMenu"
@@ -143,20 +142,21 @@
         android:layout_gravity="bottom|end"
         android:layout_marginBottom="35dp"
         app:menu_open="arc_left"
+        app:menu_scr="@drawable/ic_plus"
+        app:menu_color="#448AFF"
         app:layout_anchorGravity="right|bottom"
-        app:fabSize="normal"
-        app:menu_scr="@android:drawable/ic_dialog_dialer">
+        app:fabSize="normal">
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/smoke"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/smoke" />
+            android:src="@drawable/ic_smoking" />
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/toilet"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/toilet" />
+            android:src="@drawable/ic_toilet" />
     </com.sa90.materialarcmenu.ArcMenu>
 </android.support.design.widget.CoordinatorLayout>
 

@@ -34,7 +34,6 @@ import com.google.android.gms.maps.model.*
 import com.sa90.materialarcmenu.StateChangeListener
 import kotlinx.android.synthetic.main.activity_main.*
 import kr.mash_up.seoulmaps.R
-import kr.mash_up.seoulmaps.R.drawable.search
 import kr.mash_up.seoulmaps.SeoulMapApplication
 import kr.mash_up.seoulmaps.adapter.BottomSheetAdapter
 import kr.mash_up.seoulmaps.adapter.PlaceAutocompleteAdapter
@@ -56,7 +55,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
         OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
 
-    private lateinit var mMap: GoogleMap
+    private var mMap: GoogleMap? = null
     private lateinit var mapFragment: SupportMapFragment
     private var mCameraPosition: CameraPosition? = null
     private var mLastKnownLocation: Location? = null
@@ -195,7 +194,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
     @UiThread
     private fun setUpToolbar() =
             toolbar?.apply {
-                setNavigationIcon(search)
+                setNavigationIcon(R.drawable.ic_search)
                 setOnClickListener { showSearchLayout() }
                 cancel.setOnClickListener(object : View.OnClickListener{
                     override fun onClick(v: View?) {
@@ -217,7 +216,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
 
     override fun onMapReady(map: GoogleMap) {
         mMap = map
-        mMap.setOnMarkerClickListener(this)
+        mMap?.setOnMarkerClickListener(this)
 
         // Turn on the My Location layer and the related control on the map.
         updateLocationUI()
@@ -239,7 +238,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
             if(polyline != null) {
                 polyline?.remove()
             }
-            polyline = mMap.addPolyline(PolylineOptions()
+            polyline = mMap?.addPolyline(PolylineOptions()
                     .add(LatLng(markerLat, markerLng), LatLng(userLat, userLng))
                     .width(12.toFloat())
                     .color(Color.GREEN))
@@ -283,11 +282,11 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
         SharedPreferencesUtil.newInstance()?.userLat = 37.5022.toFloat()    //lat
         SharedPreferencesUtil.newInstance()?.userLong = 127.0299.toFloat()  //lng
 
-        mMap.addMarker(MarkerOptions()
+        mMap?.addMarker(MarkerOptions()
                 .position(LatLng(37.5022, 127.0299))
                 .title("내 위치")
                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_me)))
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.5022, 127.0299), DEFAULT_ZOOM.toFloat()))
+        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.5022, 127.0299), DEFAULT_ZOOM.toFloat()))
     }
 
     private fun getDeviceLocation() {
@@ -306,12 +305,12 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
 
         // Set the map's camera position to the current location of the device.
         if (mCameraPosition != null) {
-            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(mCameraPosition))
+            mMap?.moveCamera(CameraUpdateFactory.newCameraPosition(mCameraPosition))
         } else if (mLastKnownLocation != null) {
             val lat = mLastKnownLocation?.latitude
             val lng = mLastKnownLocation?.longitude
             if(lat != null && lng != null) {
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(
                         LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
 
                 SharedPreferencesUtil.newInstance()?.userLat = lat.toFloat()
@@ -319,8 +318,8 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
             }
         } else {
             Log.d(TAG, "Current location is null. Using defaults.")
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocationSeoul, DEFAULT_ZOOM.toFloat()))
-            mMap.uiSettings.isMyLocationButtonEnabled = false
+            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocationSeoul, DEFAULT_ZOOM.toFloat()))
+            mMap?.uiSettings?.isMyLocationButtonEnabled = false
         }
     }
 
@@ -354,11 +353,11 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
         }
 
         if (mLocationPermissionGranted) {
-            mMap.isMyLocationEnabled = true
-            mMap.uiSettings.isMyLocationButtonEnabled = true
+            mMap?.isMyLocationEnabled = true
+            mMap?.uiSettings?.isMyLocationButtonEnabled = true
         } else {
-            mMap.isMyLocationEnabled = false
-            mMap.uiSettings.isMyLocationButtonEnabled = false
+            mMap?.isMyLocationEnabled = false
+            mMap?.uiSettings?.isMyLocationButtonEnabled = false
             mLastKnownLocation = null
         }
     }
@@ -417,7 +416,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
 
     override fun onSaveInstanceState(savedInstanceState: Bundle?) {
         super.onSaveInstanceState(savedInstanceState)
-        savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
+        savedInstanceState?.putParcelable(KEY_CAMERA_POSITION, mMap?.cameraPosition)
         savedInstanceState?.putParcelable(KEY_LOCATION, mLastKnownLocation)
         savedInstanceState?.putBoolean(FIELD_ERROR_PROCESSING, isErrorProcessing)
     }
@@ -500,21 +499,21 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
                 val lng = item.location[0]
 
                 //마커 찍음
-                mMap.addMarker(MarkerOptions()
+                mMap?.addMarker(MarkerOptions()
                         .position(LatLng(lat, lng))
                         .title(item.locationName)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_item)))
                 //마커로 찍은 장소 만들기
 //                addPlace(item, lat, lng)
                 //BottomSheet 만들어줌
-                val bottomItem = BottomSheetItem(R.drawable.toilet, item.locationName, item.toiletType, "1.0km",
+                val bottomItem = BottomSheetItem(R.drawable.ic_toilet, item.locationName, item.toiletType, "1.0km",
                         item.location[1], item.location[0])
                 bottomSheetList.add(bottomItem)
             }
             //TODO: null을 코틀린스럽게
             //줌 이동
             if(lat != null && lng != null)
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
+                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), DEFAULT_ZOOM.toFloat()))
 
             //TODO: 형식에 맞게 값을 넣어줘야함.
             setBottomSheet(bottomSheetList)
@@ -546,11 +545,10 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
             bottomAdapter.add(publicItem)
             presenter.bottomAdapterView = bottomAdapter
             adapter = bottomAdapter
+            isNestedScrollingEnabled = false
         }
 
     override fun showBottomItemInfo(bottomSheetItem: BottomSheetItem?, viewId: Int) {
-        Toast.makeText(SeoulMapApplication.context, "2.0km", Toast.LENGTH_SHORT).show()
-
         val bottomItemLat = bottomSheetItem?.lat
         val bottomItemLng = bottomSheetItem?.lng
 
@@ -561,7 +559,7 @@ class MainActivity : BaseActivity(), MainContract.View, GoogleMap.OnMarkerClickL
             if(polyline != null) {
                 polyline?.remove()
             }
-            polyline = mMap.addPolyline(PolylineOptions()
+            polyline = mMap?.addPolyline(PolylineOptions()
                     .add(LatLng(bottomItemLat, bottomItemLng), LatLng(userLat, userLng))
                     .width(12.toFloat())
                     .color(Color.GREEN))

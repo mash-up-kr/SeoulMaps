@@ -14,20 +14,23 @@ import kr.mash_up.seoulmaps.data.BottomSheetItem
  * Created by Tak on 2017. 11. 17..
  */
 
-class BottomSheetViewHolder(mContext: Context, parent: ViewGroup?, val onBottomItemClickListener: BottomSheetAdapter.OnBottomPlaceClickListener?) :
+class BottomSheetViewHolder(mContext: Context, parent: ViewGroup?, private val onBottomItemClickListener: BottomSheetAdapter.OnBottomPlaceClickListener?) :
         RecyclerView.ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.bottom_sheet_item, parent, false)) {
 
     fun bindView(item: BottomSheetItem?, position: Int) {
         itemView?.apply {
-            img.setImageResource(R.drawable.toilet)
+            img.setImageResource(R.drawable.ic_toilet)
             title.setText(item?.title)
             type.setText(item?.type)
             distance.setText(item?.distance)
 
             setOnClickListener {
-                review_container.visibility = View.VISIBLE
-                val viewId = R.id.review_container
+                if(review_container.visibility == View.VISIBLE)
+                    review_container.visibility = View.GONE
+                else
+                    review_container.visibility = View.VISIBLE
 
+                val viewId = R.id.review_container
                 onBottomItemClickListener?.onItemClick(item, viewId)
             }
         }
